@@ -93,6 +93,7 @@ if TYPE_CHECKING:
         welcome_screen,
         sku,
         poll,
+        soundboard,
     )
     from .types.snowflake import Snowflake, SnowflakeList
 
@@ -1986,22 +1987,19 @@ class HTTPClient:
     @overload
     def get_scheduled_events(
         self, guild_id: Snowflake, with_user_count: Literal[True]
-    ) -> Response[List[scheduled_event.GuildScheduledEventWithUserCount]]:
-        ...
+    ) -> Response[List[scheduled_event.GuildScheduledEventWithUserCount]]: ...
 
     @overload
     def get_scheduled_events(
         self, guild_id: Snowflake, with_user_count: Literal[False]
-    ) -> Response[List[scheduled_event.GuildScheduledEvent]]:
-        ...
+    ) -> Response[List[scheduled_event.GuildScheduledEvent]]: ...
 
     @overload
     def get_scheduled_events(
         self, guild_id: Snowflake, with_user_count: bool
     ) -> Union[
         Response[List[scheduled_event.GuildScheduledEventWithUserCount]], Response[List[scheduled_event.GuildScheduledEvent]]
-    ]:
-        ...
+    ]: ...
 
     def get_scheduled_events(self, guild_id: Snowflake, with_user_count: bool) -> Response[Any]:
         params = {'with_user_count': int(with_user_count)}
@@ -2030,20 +2028,19 @@ class HTTPClient:
     @overload
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: Literal[True]
-    ) -> Response[scheduled_event.GuildScheduledEventWithUserCount]:
-        ...
+    ) -> Response[scheduled_event.GuildScheduledEventWithUserCount]: ...
 
     @overload
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: Literal[False]
-    ) -> Response[scheduled_event.GuildScheduledEvent]:
-        ...
+    ) -> Response[scheduled_event.GuildScheduledEvent]: ...
 
     @overload
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: bool
-    ) -> Union[Response[scheduled_event.GuildScheduledEventWithUserCount], Response[scheduled_event.GuildScheduledEvent]]:
-        ...
+    ) -> Union[
+        Response[scheduled_event.GuildScheduledEventWithUserCount], Response[scheduled_event.GuildScheduledEvent]
+    ]: ...
 
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: bool
@@ -2113,8 +2110,7 @@ class HTTPClient:
         with_member: Literal[True],
         before: Optional[Snowflake] = ...,
         after: Optional[Snowflake] = ...,
-    ) -> Response[scheduled_event.ScheduledEventUsersWithMember]:
-        ...
+    ) -> Response[scheduled_event.ScheduledEventUsersWithMember]: ...
 
     @overload
     def get_scheduled_event_users(
@@ -2125,8 +2121,7 @@ class HTTPClient:
         with_member: Literal[False],
         before: Optional[Snowflake] = ...,
         after: Optional[Snowflake] = ...,
-    ) -> Response[scheduled_event.ScheduledEventUsers]:
-        ...
+    ) -> Response[scheduled_event.ScheduledEventUsers]: ...
 
     @overload
     def get_scheduled_event_users(
@@ -2137,8 +2132,7 @@ class HTTPClient:
         with_member: bool,
         before: Optional[Snowflake] = ...,
         after: Optional[Snowflake] = ...,
-    ) -> Union[Response[scheduled_event.ScheduledEventUsersWithMember], Response[scheduled_event.ScheduledEventUsers]]:
-        ...
+    ) -> Union[Response[scheduled_event.ScheduledEventUsersWithMember], Response[scheduled_event.ScheduledEventUsers]]: ...
 
     def get_scheduled_event_users(
         self,
@@ -2501,6 +2495,62 @@ class HTTPClient:
                 application_id=application_id,
                 entitlement_id=entitlement_id,
             ),
+        )
+
+    # Soundboard
+
+    def get_soundboard_default_sounds(self) -> Response[List[soundboard.SoundboardDefaultSound]]:
+        return self.request(Route('GET', '/soundboard-default-sounds'))
+
+    def create_soundboard_sound(
+        self, guild_id: Snowflake, *, reason: Optional[str], **payload: Any
+    ) -> Response[soundboard.SoundboardSound]:
+        valid_keys = (
+            'name',
+            'sound',
+            'volume',
+            'emoji_id',
+            'emoji_name',
+        )
+
+        payload = {k: v for k, v in payload.items() if k in valid_keys and v is not None}
+
+        return self.request(
+            Route('POST', '/guilds/{guild_id}/soundboard-sounds', guild_id=guild_id), json=payload, reason=reason
+        )
+
+    def edit_soundboard_sound(
+        self, guild_id: Snowflake, sound_id: Snowflake, *, reason: Optional[str], **payload: Any
+    ) -> Response[soundboard.SoundboardSound]:
+        valid_keys = (
+            'name',
+            'volume',
+            'emoji_id',
+            'emoji_name',
+        )
+
+        payload = {k: v for k, v in payload.items() if k in valid_keys}
+
+        return self.request(
+            Route(
+                'PATCH',
+                '/guilds/{guild_id}/soundboard-sounds/{sound_id}',
+                guild_id=guild_id,
+                sound_id=sound_id,
+            ),
+            json=payload,
+            reason=reason,
+        )
+
+    def delete_soundboard_sound(self, guild_id: Snowflake, sound_id: Snowflake, *, reason: Optional[str]) -> Response[None]:
+        return self.request(
+            Route(
+                'DELETE',
+                '/guilds/{guild_id}/soundboard-sounds/{sound_id}',
+                guild_id=guild_id,
+                sound_id=sound_id,
+            ),
+            reason=reason,
         )
 
     # Misc
