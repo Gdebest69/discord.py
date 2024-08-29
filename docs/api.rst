@@ -1316,7 +1316,7 @@ Soundboard
 
     Called when a :class:`SoundboardSound` is created or deleted.
 
-    .. versionadded:: 2.4
+    .. versionadded:: 2.5
 
     :param sound: The soundboard sound that was created or deleted.
     :type sound: :class:`SoundboardSound`
@@ -1331,7 +1331,7 @@ Soundboard
     - The emoji is changed.
     - The volume is changed.
 
-    .. versionadded:: 2.4
+    .. versionadded:: 2.5
 
     :param sound: The soundboard sound that was updated.
     :type sound: :class:`SoundboardSound`
@@ -1528,7 +1528,7 @@ Voice
 
     This requires :attr:`Intents.voice_states` to be enabled.
 
-    .. versionadded:: 2.4
+    .. versionadded:: 2.5
 
     :param effect: The effect that is sent.
     :type effect: :class:`VoiceChannelEffect`
@@ -3005,7 +3005,7 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.emoji`
         - :attr:`~AuditLogDiff.volume`
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
 
     .. attribute:: soundboard_sound_update
 
@@ -3017,7 +3017,7 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.emoji`
         - :attr:`~AuditLogDiff.volume`
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
 
     .. attribute:: soundboard_sound_delete
 
@@ -3028,6 +3028,40 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.name`
         - :attr:`~AuditLogDiff.emoji`
         - :attr:`~AuditLogDiff.volume`
+
+        .. versionadded:: 2.5
+
+    .. attribute:: voice_channel_status_update
+
+        The status of a voice channel was updated.
+
+        When this is the action, the type of :attr:`~AuditLogEntry.target` is
+        a :class:`VoiceChannel`.
+
+        When this is the action, the type of :attr:`~AuditLogEntry.extra` is
+        set to an unspecified proxy object with 2 attributes:
+
+        - ``status``: The status of the voice channel.
+        - ``channel``: The channel of which the status was updated.
+
+        When this is the action, :attr:`AuditLogEntry.changes` is empty.
+
+        .. versionadded:: 2.4
+
+    .. attribute:: voice_channel_status_delete
+
+        The status of a voice channel was deleted.
+
+        When this is the action, the type of :attr:`~AuditLogEntry.target` is
+        a :class:`VoiceChannel`.
+
+        When this is the action, the type of :attr:`~AuditLogEntry.extra` is
+        set to an unspecified proxy object with 2 attributes:
+
+        - ``status``: The status of the voice channel. For this action this is ``None``.
+        - ``channel``: The channel of which the status was updated.
+
+        When this is the action, :attr:`AuditLogEntry.changes` is empty.
 
         .. versionadded:: 2.4
 
@@ -4962,7 +4996,7 @@ VoiceChannel
 
     A namedtuple which represents a voice channel effect animation.
 
-    .. versionadded:: 2.4
+    .. versionadded:: 2.5
 
     .. attribute:: id
 

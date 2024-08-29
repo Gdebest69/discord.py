@@ -52,7 +52,7 @@ __all__ = ('BaseSoundboardSound', 'SoundboardDefaultSound', 'SoundboardSound')
 class BaseSoundboardSound(Hashable, AssetMixin):
     """Represents a generic Discord soundboard sound.
 
-    .. versionadded:: 2.4
+    .. versionadded:: 2.5
 
     .. container:: operations
 
@@ -103,7 +103,7 @@ class BaseSoundboardSound(Hashable, AssetMixin):
 class SoundboardDefaultSound(BaseSoundboardSound):
     """Represents a Discord soundboard default sound.
 
-    .. versionadded:: 2.4
+    .. versionadded:: 2.5
 
     .. container:: operations
 
@@ -135,7 +135,7 @@ class SoundboardDefaultSound(BaseSoundboardSound):
 
     def __init__(self, *, state: ConnectionState, data: SoundboardDefaultSoundPayload):
         self.name: str = data['name']
-        self.emoji: PartialEmoji = PartialEmoji(name=data['emoji_name'], id=utils._get_as_snowflake(data, 'emoji_id'))
+        self.emoji: PartialEmoji = PartialEmoji(name=data['emoji_name'])
         super().__init__(state=state, data=data)
 
     def __repr__(self) -> str:
@@ -152,7 +152,7 @@ class SoundboardDefaultSound(BaseSoundboardSound):
 class SoundboardSound(BaseSoundboardSound):
     """Represents a Discord soundboard sound.
 
-    .. versionadded:: 2.4
+    .. versionadded:: 2.5
 
     .. container:: operations
 
@@ -180,21 +180,16 @@ class SoundboardSound(BaseSoundboardSound):
         The emoji of the sound. ``None`` if no emoji is set.
     guild: :class:`Guild`
         The guild in which the sound is uploaded.
-    guild_id: :class:`int`
-        The ID of the guild in which the sound is uploaded.
-    user_id: :class:`int`
-        The ID of the user who uploaded the sound.
     available: :class:`bool`
         Whether this sound is available for use.
     """
 
-    __slots__ = ('_state', 'guild_id', 'name', 'emoji', '_user', 'available', 'user_id', 'guild')
+    __slots__ = ('_state', 'name', 'emoji', '_user', 'available', '_user_id', 'guild')
 
     def __init__(self, *, guild: Guild, state: ConnectionState, data: SoundboardSoundPayload):
         super().__init__(state=state, data=data)
         self.guild = guild
-        self.guild_id: int = guild.id
-        self.user_id: int = int(data['user_id'])
+        self._user_id = utils._get_as_snowflake(data, 'user_id')
         self._user = data.get('user')
 
         self._update(data)
@@ -232,12 +227,14 @@ class SoundboardSound(BaseSoundboardSound):
     def user(self) -> Optional[User]:
         """Optional[:class:`User`]: The user who uploaded the sound."""
         if self._user is None:
-            return self._state.get_user(self.user_id)
-
+            if self._user_id is None:
+                return None
+            return self._state.get_user(self._user_id)
         return User(state=self._state, data=self._user)
 
     async def edit(
         self,
+        *,
         name: str = MISSING,
         volume: Optional[float] = MISSING,
         emoji: Optional[EmojiInputType] = MISSING,
@@ -248,6 +245,8 @@ class SoundboardSound(BaseSoundboardSound):
         Edits the soundboard sound.
 
         You must have :attr:`~Permissions.manage_expressions` to edit the sound.
+        If the sound was created by the client, you must have either :attr:`~Permissions.manage_expressions`
+        or :attr:`~Permissions.create_expressions`.
 
         Parameters
         ----------
@@ -299,7 +298,7 @@ class SoundboardSound(BaseSoundboardSound):
                     else:
                         payload['emoji_id'] = partial_emoji.id
 
-        data = await self._state.http.edit_soundboard_sound(self.guild_id, self.id, reason=reason, **payload)
+        data = await self._state.http.edit_soundboard_sound(self.guild.id, self.id, reason=reason, **payload)
         return SoundboardSound(guild=self.guild, state=self._state, data=data)
 
     async def delete(self, *, reason: Optional[str] = None) -> None:
@@ -308,6 +307,8 @@ class SoundboardSound(BaseSoundboardSound):
         Deletes the soundboard sound.
 
         You must have :attr:`~Permissions.manage_expressions` to delete the sound.
+        If the sound was created by the client, you must have either :attr:`~Permissions.manage_expressions`
+        or :attr:`~Permissions.create_expressions`.
 
         Parameters
         -----------
@@ -321,4 +322,4 @@ class SoundboardSound(BaseSoundboardSound):
         HTTPException
             Deleting the soundboard sound failed.
         """
-        await self._state.http.delete_soundboard_sound(self.guild_id, self.id, reason=reason)
+        await self._state.http.delete_soundboard_sound(self.guild.id, self.id, reason=reason)

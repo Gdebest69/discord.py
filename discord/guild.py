@@ -1014,14 +1014,14 @@ class Guild(Hashable):
     def soundboard_sounds(self) -> Sequence[SoundboardSound]:
         """Sequence[:class:`SoundboardSound`]: Returns a sequence of the guild's soundboard sounds.
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
         """
         return utils.SequenceProxy(self._soundboard_sounds.values())
 
     def get_soundboard_sound(self, sound_id: int, /) -> Optional[SoundboardSound]:
         """Returns a soundboard sound with the given ID.
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
 
         Parameters
         -----------
@@ -4508,6 +4508,66 @@ class Guild(Hashable):
 
         return self.dms_paused_until > utils.utcnow()
 
+    async def fetch_soundboard_sound(self, sound_id: int, /) -> SoundboardSound:
+        """|coro|
+
+        Retrieves a :class:`SoundboardSound` with the specified ID.
+
+        .. versionadded:: 2.5
+
+        .. note::
+
+            Using this, in order to receive :attr:`SoundboardSound.user`, you must have :attr:`~Permissions.create_expressions`
+            or :attr:`~Permissions.manage_expressions`.
+
+        .. note::
+
+            This method is an API call. For general usage, consider :attr:`get_soundboard_sound` instead.
+
+        Raises
+        -------
+        NotFound
+            The sound requested could not be found.
+        HTTPException
+            Retrieving the sound failed.
+
+        Returns
+        --------
+        :class:`SoundboardSound`
+            The retrieved sound.
+        """
+        data = await self._state.http.get_soundboard_sound(self.id, sound_id)
+        return SoundboardSound(guild=self, state=self._state, data=data)
+
+    async def fetch_soundboard_sounds(self) -> List[SoundboardSound]:
+        """|coro|
+
+        Retrieves a list of all soundboard sounds for the guild.
+
+        .. versionadded:: 2.5
+
+        .. note::
+
+            Using this, in order to receive :attr:`SoundboardSound.user`, you must have :attr:`~Permissions.create_expressions`
+            or :attr:`~Permissions.manage_expressions`.
+
+        .. note::
+
+            This method is an API call. For general usage, consider :attr:`soundboard_sounds` instead.
+
+        Raises
+        -------
+        HTTPException
+            Retrieving the sounds failed.
+
+        Returns
+        --------
+        List[:class:`SoundboardSound`]
+            The retrieved soundboard sounds.
+        """
+        data = await self._state.http.get_soundboard_sounds(self.id)
+        return [SoundboardSound(guild=self, state=self._state, data=sound) for sound in data['items']]
+
     async def create_soundboard_sound(
         self,
         *,
@@ -4520,9 +4580,9 @@ class Guild(Hashable):
         """|coro|
 
         Creates a :class:`SoundboardSound` for the guild.
-        You must have :attr:`Permissions.manage_expressions` to do this.
+        You must have :attr:`Permissions.create_expressions` to do this.
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
 
         Parameters
         ----------
@@ -4530,7 +4590,7 @@ class Guild(Hashable):
             The name of the sound. Must be between 2 and 32 characters.
         sound: :class:`bytes`
             The :term:`py:bytes-like object` representing the sound data.
-            Only MP3 sound files that don't exceed the duration of 5.2s are supported.
+            Only MP3 and OGG sound files that don't exceed the duration of 5.2s are supported.
         volume: :class:`float`
             The volume of the sound. Must be between 0 and 1. Defaults to ``1``.
         emoji: Optional[Union[:class:`Emoji`, :class:`PartialEmoji`, :class:`str`]]
@@ -4582,7 +4642,7 @@ class Guild(Hashable):
 
         This is a websocket operation and can be slow.
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
 
         Parameters
         ----------

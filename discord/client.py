@@ -388,7 +388,7 @@ class Client:
     def soundboard_sounds(self) -> List[SoundboardSound]:
         """List[:class:`.SoundboardSound`]: The soundboard sounds that the connected client has.
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
         """
         return self._connection.soundboard_sounds
 
@@ -1121,7 +1121,7 @@ class Client:
     def get_soundboard_sound(self, id: int, /) -> Optional[SoundboardSound]:
         """Returns a soundboard sound with the given ID.
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
 
         Parameters
         ----------
@@ -2906,7 +2906,7 @@ class Client:
 
         Retrieves all default soundboard sounds.
 
-        .. versionadded:: 2.4
+        .. versionadded:: 2.5
 
         Raises
         -------
