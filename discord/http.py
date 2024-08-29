@@ -1999,19 +1999,22 @@ class HTTPClient:
     @overload
     def get_scheduled_events(
         self, guild_id: Snowflake, with_user_count: Literal[True]
-    ) -> Response[List[scheduled_event.GuildScheduledEventWithUserCount]]: ...
+    ) -> Response[List[scheduled_event.GuildScheduledEventWithUserCount]]:
+        ...
 
     @overload
     def get_scheduled_events(
         self, guild_id: Snowflake, with_user_count: Literal[False]
-    ) -> Response[List[scheduled_event.GuildScheduledEvent]]: ...
+    ) -> Response[List[scheduled_event.GuildScheduledEvent]]:
+        ...
 
     @overload
     def get_scheduled_events(
         self, guild_id: Snowflake, with_user_count: bool
     ) -> Union[
         Response[List[scheduled_event.GuildScheduledEventWithUserCount]], Response[List[scheduled_event.GuildScheduledEvent]]
-    ]: ...
+    ]:
+        ...
 
     def get_scheduled_events(self, guild_id: Snowflake, with_user_count: bool) -> Response[Any]:
         params = {'with_user_count': int(with_user_count)}
@@ -2040,19 +2043,20 @@ class HTTPClient:
     @overload
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: Literal[True]
-    ) -> Response[scheduled_event.GuildScheduledEventWithUserCount]: ...
+    ) -> Response[scheduled_event.GuildScheduledEventWithUserCount]:
+        ...
 
     @overload
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: Literal[False]
-    ) -> Response[scheduled_event.GuildScheduledEvent]: ...
+    ) -> Response[scheduled_event.GuildScheduledEvent]:
+        ...
 
     @overload
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: bool
-    ) -> Union[
-        Response[scheduled_event.GuildScheduledEventWithUserCount], Response[scheduled_event.GuildScheduledEvent]
-    ]: ...
+    ) -> Union[Response[scheduled_event.GuildScheduledEventWithUserCount], Response[scheduled_event.GuildScheduledEvent]]:
+        ...
 
     def get_scheduled_event(
         self, guild_id: Snowflake, guild_scheduled_event_id: Snowflake, with_user_count: bool
@@ -2122,7 +2126,8 @@ class HTTPClient:
         with_member: Literal[True],
         before: Optional[Snowflake] = ...,
         after: Optional[Snowflake] = ...,
-    ) -> Response[scheduled_event.ScheduledEventUsersWithMember]: ...
+    ) -> Response[scheduled_event.ScheduledEventUsersWithMember]:
+        ...
 
     @overload
     def get_scheduled_event_users(
@@ -2133,7 +2138,8 @@ class HTTPClient:
         with_member: Literal[False],
         before: Optional[Snowflake] = ...,
         after: Optional[Snowflake] = ...,
-    ) -> Response[scheduled_event.ScheduledEventUsers]: ...
+    ) -> Response[scheduled_event.ScheduledEventUsers]:
+        ...
 
     @overload
     def get_scheduled_event_users(
@@ -2144,7 +2150,8 @@ class HTTPClient:
         with_member: bool,
         before: Optional[Snowflake] = ...,
         after: Optional[Snowflake] = ...,
-    ) -> Union[Response[scheduled_event.ScheduledEventUsersWithMember], Response[scheduled_event.ScheduledEventUsers]]: ...
+    ) -> Union[Response[scheduled_event.ScheduledEventUsersWithMember], Response[scheduled_event.ScheduledEventUsers]]:
+        ...
 
     def get_scheduled_event_users(
         self,

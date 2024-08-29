@@ -1205,7 +1205,8 @@ class Client:
         *,
         check: Optional[Callable[[RawAppCommandPermissionsUpdateEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawAppCommandPermissionsUpdateEvent: ...
+    ) -> RawAppCommandPermissionsUpdateEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1215,7 +1216,8 @@ class Client:
         *,
         check: Optional[Callable[[Interaction[Self], Union[Command[Any, ..., Any], ContextMenu]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Interaction[Self], Union[Command[Any, ..., Any], ContextMenu]]: ...
+    ) -> Tuple[Interaction[Self], Union[Command[Any, ..., Any], ContextMenu]]:
+        ...
 
     # AutoMod
 
@@ -1227,7 +1229,8 @@ class Client:
         *,
         check: Optional[Callable[[AutoModRule], bool]],
         timeout: Optional[float] = None,
-    ) -> AutoModRule: ...
+    ) -> AutoModRule:
+        ...
 
     @overload
     async def wait_for(
@@ -1237,7 +1240,8 @@ class Client:
         *,
         check: Optional[Callable[[AutoModAction], bool]],
         timeout: Optional[float] = None,
-    ) -> AutoModAction: ...
+    ) -> AutoModAction:
+        ...
 
     # Channels
 
@@ -1249,7 +1253,8 @@ class Client:
         *,
         check: Optional[Callable[[GroupChannel, GroupChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[GroupChannel, GroupChannel]: ...
+    ) -> Tuple[GroupChannel, GroupChannel]:
+        ...
 
     @overload
     async def wait_for(
@@ -1259,7 +1264,8 @@ class Client:
         *,
         check: Optional[Callable[[PrivateChannel, datetime.datetime], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[PrivateChannel, datetime.datetime]: ...
+    ) -> Tuple[PrivateChannel, datetime.datetime]:
+        ...
 
     @overload
     async def wait_for(
@@ -1269,7 +1275,8 @@ class Client:
         *,
         check: Optional[Callable[[GuildChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> GuildChannel: ...
+    ) -> GuildChannel:
+        ...
 
     @overload
     async def wait_for(
@@ -1279,7 +1286,8 @@ class Client:
         *,
         check: Optional[Callable[[GuildChannel, GuildChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[GuildChannel, GuildChannel]: ...
+    ) -> Tuple[GuildChannel, GuildChannel]:
+        ...
 
     @overload
     async def wait_for(
@@ -1294,7 +1302,8 @@ class Client:
             ]
         ],
         timeout: Optional[float] = None,
-    ) -> Tuple[Union[GuildChannel, Thread], Optional[datetime.datetime]]: ...
+    ) -> Tuple[Union[GuildChannel, Thread], Optional[datetime.datetime]]:
+        ...
 
     @overload
     async def wait_for(
@@ -1304,7 +1313,8 @@ class Client:
         *,
         check: Optional[Callable[[Messageable, Union[User, Member], datetime.datetime], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Messageable, Union[User, Member], datetime.datetime]: ...
+    ) -> Tuple[Messageable, Union[User, Member], datetime.datetime]:
+        ...
 
     @overload
     async def wait_for(
@@ -1314,7 +1324,8 @@ class Client:
         *,
         check: Optional[Callable[[RawTypingEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawTypingEvent: ...
+    ) -> RawTypingEvent:
+        ...
 
     # Debug & Gateway events
 
@@ -1326,7 +1337,8 @@ class Client:
         *,
         check: Optional[Callable[[], bool]],
         timeout: Optional[float] = None,
-    ) -> None: ...
+    ) -> None:
+        ...
 
     @overload
     async def wait_for(
@@ -1336,7 +1348,8 @@ class Client:
         *,
         check: Optional[Callable[[int], bool]],
         timeout: Optional[float] = None,
-    ) -> int: ...
+    ) -> int:
+        ...
 
     @overload
     async def wait_for(
@@ -1346,7 +1359,8 @@ class Client:
         *,
         check: Optional[Callable[[str], bool]],
         timeout: Optional[float] = None,
-    ) -> str: ...
+    ) -> str:
+        ...
 
     @overload
     async def wait_for(
@@ -1356,7 +1370,8 @@ class Client:
         *,
         check: Optional[Callable[[Union[str, bytes]], bool]],
         timeout: Optional[float] = None,
-    ) -> Union[str, bytes]: ...
+    ) -> Union[str, bytes]:
+        ...
 
     # Guilds
 
@@ -1373,7 +1388,8 @@ class Client:
         *,
         check: Optional[Callable[[Guild], bool]],
         timeout: Optional[float] = None,
-    ) -> Guild: ...
+    ) -> Guild:
+        ...
 
     @overload
     async def wait_for(
@@ -1383,7 +1399,8 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Guild], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Guild]: ...
+    ) -> Tuple[Guild, Guild]:
+        ...
 
     @overload
     async def wait_for(
@@ -1393,7 +1410,8 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Sequence[Emoji], Sequence[Emoji]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Sequence[Emoji], Sequence[Emoji]]: ...
+    ) -> Tuple[Guild, Sequence[Emoji], Sequence[Emoji]]:
+        ...
 
     @overload
     async def wait_for(
@@ -1403,7 +1421,8 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Sequence[GuildSticker], Sequence[GuildSticker]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Sequence[GuildSticker], Sequence[GuildSticker]]: ...
+    ) -> Tuple[Guild, Sequence[GuildSticker], Sequence[GuildSticker]]:
+        ...
 
     @overload
     async def wait_for(
@@ -1413,7 +1432,8 @@ class Client:
         *,
         check: Optional[Callable[[Invite], bool]],
         timeout: Optional[float] = None,
-    ) -> Invite: ...
+    ) -> Invite:
+        ...
 
     @overload
     async def wait_for(
@@ -1423,7 +1443,8 @@ class Client:
         *,
         check: Optional[Callable[[AuditLogEntry], bool]],
         timeout: Optional[float] = None,
-    ) -> AuditLogEntry: ...
+    ) -> AuditLogEntry:
+        ...
 
     # Integrations
 
@@ -1435,7 +1456,8 @@ class Client:
         *,
         check: Optional[Callable[[Integration], bool]],
         timeout: Optional[float] = None,
-    ) -> Integration: ...
+    ) -> Integration:
+        ...
 
     @overload
     async def wait_for(
@@ -1445,7 +1467,8 @@ class Client:
         *,
         check: Optional[Callable[[Guild], bool]],
         timeout: Optional[float] = None,
-    ) -> Guild: ...
+    ) -> Guild:
+        ...
 
     @overload
     async def wait_for(
@@ -1455,7 +1478,8 @@ class Client:
         *,
         check: Optional[Callable[[GuildChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> GuildChannel: ...
+    ) -> GuildChannel:
+        ...
 
     @overload
     async def wait_for(
@@ -1465,7 +1489,8 @@ class Client:
         *,
         check: Optional[Callable[[RawIntegrationDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawIntegrationDeleteEvent: ...
+    ) -> RawIntegrationDeleteEvent:
+        ...
 
     # Interactions
 
@@ -1477,7 +1502,8 @@ class Client:
         *,
         check: Optional[Callable[[Interaction[Self]], bool]],
         timeout: Optional[float] = None,
-    ) -> Interaction[Self]: ...
+    ) -> Interaction[Self]:
+        ...
 
     # Members
 
@@ -1489,7 +1515,8 @@ class Client:
         *,
         check: Optional[Callable[[Member], bool]],
         timeout: Optional[float] = None,
-    ) -> Member: ...
+    ) -> Member:
+        ...
 
     @overload
     async def wait_for(
@@ -1499,7 +1526,8 @@ class Client:
         *,
         check: Optional[Callable[[RawMemberRemoveEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawMemberRemoveEvent: ...
+    ) -> RawMemberRemoveEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1509,7 +1537,8 @@ class Client:
         *,
         check: Optional[Callable[[Member, Member], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Member, Member]: ...
+    ) -> Tuple[Member, Member]:
+        ...
 
     @overload
     async def wait_for(
@@ -1519,7 +1548,8 @@ class Client:
         *,
         check: Optional[Callable[[User, User], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[User, User]: ...
+    ) -> Tuple[User, User]:
+        ...
 
     @overload
     async def wait_for(
@@ -1529,7 +1559,8 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Union[User, Member]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Union[User, Member]]: ...
+    ) -> Tuple[Guild, Union[User, Member]]:
+        ...
 
     @overload
     async def wait_for(
@@ -1539,7 +1570,8 @@ class Client:
         *,
         check: Optional[Callable[[Guild, User], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, User]: ...
+    ) -> Tuple[Guild, User]:
+        ...
 
     # Messages
 
@@ -1551,7 +1583,8 @@ class Client:
         *,
         check: Optional[Callable[[Message], bool]],
         timeout: Optional[float] = None,
-    ) -> Message: ...
+    ) -> Message:
+        ...
 
     @overload
     async def wait_for(
@@ -1561,7 +1594,8 @@ class Client:
         *,
         check: Optional[Callable[[Message, Message], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Message, Message]: ...
+    ) -> Tuple[Message, Message]:
+        ...
 
     @overload
     async def wait_for(
@@ -1571,7 +1605,8 @@ class Client:
         *,
         check: Optional[Callable[[List[Message]], bool]],
         timeout: Optional[float] = None,
-    ) -> List[Message]: ...
+    ) -> List[Message]:
+        ...
 
     @overload
     async def wait_for(
@@ -1581,7 +1616,8 @@ class Client:
         *,
         check: Optional[Callable[[RawMessageUpdateEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawMessageUpdateEvent: ...
+    ) -> RawMessageUpdateEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1591,7 +1627,8 @@ class Client:
         *,
         check: Optional[Callable[[RawMessageDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawMessageDeleteEvent: ...
+    ) -> RawMessageDeleteEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1601,7 +1638,8 @@ class Client:
         *,
         check: Optional[Callable[[RawBulkMessageDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawBulkMessageDeleteEvent: ...
+    ) -> RawBulkMessageDeleteEvent:
+        ...
 
     # Reactions
 
@@ -1613,7 +1651,8 @@ class Client:
         *,
         check: Optional[Callable[[Reaction, Union[Member, User]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Reaction, Union[Member, User]]: ...
+    ) -> Tuple[Reaction, Union[Member, User]]:
+        ...
 
     @overload
     async def wait_for(
@@ -1623,7 +1662,8 @@ class Client:
         *,
         check: Optional[Callable[[Message, List[Reaction]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Message, List[Reaction]]: ...
+    ) -> Tuple[Message, List[Reaction]]:
+        ...
 
     @overload
     async def wait_for(
@@ -1633,7 +1673,8 @@ class Client:
         *,
         check: Optional[Callable[[Reaction], bool]],
         timeout: Optional[float] = None,
-    ) -> Reaction: ...
+    ) -> Reaction:
+        ...
 
     @overload
     async def wait_for(
@@ -1643,7 +1684,8 @@ class Client:
         *,
         check: Optional[Callable[[RawReactionActionEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawReactionActionEvent: ...
+    ) -> RawReactionActionEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1653,7 +1695,8 @@ class Client:
         *,
         check: Optional[Callable[[RawReactionClearEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawReactionClearEvent: ...
+    ) -> RawReactionClearEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1663,7 +1706,8 @@ class Client:
         *,
         check: Optional[Callable[[RawReactionClearEmojiEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawReactionClearEmojiEvent: ...
+    ) -> RawReactionClearEmojiEvent:
+        ...
 
     # Roles
 
@@ -1675,7 +1719,8 @@ class Client:
         *,
         check: Optional[Callable[[Role], bool]],
         timeout: Optional[float] = None,
-    ) -> Role: ...
+    ) -> Role:
+        ...
 
     @overload
     async def wait_for(
@@ -1685,7 +1730,8 @@ class Client:
         *,
         check: Optional[Callable[[Role, Role], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Role, Role]: ...
+    ) -> Tuple[Role, Role]:
+        ...
 
     # Scheduled Events
 
@@ -1697,7 +1743,8 @@ class Client:
         *,
         check: Optional[Callable[[ScheduledEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> ScheduledEvent: ...
+    ) -> ScheduledEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1707,7 +1754,8 @@ class Client:
         *,
         check: Optional[Callable[[ScheduledEvent, User], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[ScheduledEvent, User]: ...
+    ) -> Tuple[ScheduledEvent, User]:
+        ...
 
     # Stages
 
@@ -1719,7 +1767,8 @@ class Client:
         *,
         check: Optional[Callable[[StageInstance], bool]],
         timeout: Optional[float] = None,
-    ) -> StageInstance: ...
+    ) -> StageInstance:
+        ...
 
     @overload
     async def wait_for(
@@ -1729,7 +1778,8 @@ class Client:
         *,
         check: Optional[Callable[[StageInstance, StageInstance], bool]],
         timeout: Optional[float] = None,
-    ) -> Coroutine[Any, Any, Tuple[StageInstance, StageInstance]]: ...
+    ) -> Coroutine[Any, Any, Tuple[StageInstance, StageInstance]]:
+        ...
 
     # Threads
     @overload
@@ -1740,7 +1790,8 @@ class Client:
         *,
         check: Optional[Callable[[Thread], bool]],
         timeout: Optional[float] = None,
-    ) -> Thread: ...
+    ) -> Thread:
+        ...
 
     @overload
     async def wait_for(
@@ -1750,7 +1801,8 @@ class Client:
         *,
         check: Optional[Callable[[Thread, Thread], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Thread, Thread]: ...
+    ) -> Tuple[Thread, Thread]:
+        ...
 
     @overload
     async def wait_for(
@@ -1760,7 +1812,8 @@ class Client:
         *,
         check: Optional[Callable[[RawThreadUpdateEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawThreadUpdateEvent: ...
+    ) -> RawThreadUpdateEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1770,7 +1823,8 @@ class Client:
         *,
         check: Optional[Callable[[RawThreadDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawThreadDeleteEvent: ...
+    ) -> RawThreadDeleteEvent:
+        ...
 
     @overload
     async def wait_for(
@@ -1780,7 +1834,8 @@ class Client:
         *,
         check: Optional[Callable[[ThreadMember], bool]],
         timeout: Optional[float] = None,
-    ) -> ThreadMember: ...
+    ) -> ThreadMember:
+        ...
 
     @overload
     async def wait_for(
@@ -1790,7 +1845,8 @@ class Client:
         *,
         check: Optional[Callable[[RawThreadMembersUpdate], bool]],
         timeout: Optional[float] = None,
-    ) -> RawThreadMembersUpdate: ...
+    ) -> RawThreadMembersUpdate:
+        ...
 
     # Voice
 
@@ -1802,7 +1858,8 @@ class Client:
         *,
         check: Optional[Callable[[Member, VoiceState, VoiceState], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Member, VoiceState, VoiceState]: ...
+    ) -> Tuple[Member, VoiceState, VoiceState]:
+        ...
 
     # Polls
 
@@ -1814,7 +1871,8 @@ class Client:
         *,
         check: Optional[Callable[[Union[User, Member], PollAnswer], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Tuple[Union[User, Member], PollAnswer]: ...
+    ) -> Tuple[Union[User, Member], PollAnswer]:
+        ...
 
     @overload
     async def wait_for(
@@ -1824,7 +1882,8 @@ class Client:
         *,
         check: Optional[Callable[[RawPollVoteActionEvent], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> RawPollVoteActionEvent: ...
+    ) -> RawPollVoteActionEvent:
+        ...
 
     # Commands
 
@@ -1836,7 +1895,8 @@ class Client:
         *,
         check: Optional[Callable[[Context[Any]], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Context[Any]: ...
+    ) -> Context[Any]:
+        ...
 
     @overload
     async def wait_for(
@@ -1846,7 +1906,8 @@ class Client:
         *,
         check: Optional[Callable[[Context[Any], CommandError], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Tuple[Context[Any], CommandError]: ...
+    ) -> Tuple[Context[Any], CommandError]:
+        ...
 
     @overload
     async def wait_for(
@@ -1856,7 +1917,8 @@ class Client:
         *,
         check: Optional[Callable[..., bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Any: ...
+    ) -> Any:
+        ...
 
     def wait_for(
         self,
