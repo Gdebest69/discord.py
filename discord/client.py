@@ -250,6 +250,11 @@ class Client:
         set to is ``30.0`` seconds.
 
         .. versionadded:: 2.0
+    connector: Optional[:class:`aiohttp.BaseConnector`]
+        The aiohhtp connector to use for this client. This can be used to control underlying aiohttp
+        behavior, such as setting a dns resolver or sslcontext.
+
+        .. versionadded:: 2.5
 
     Attributes
     -----------
@@ -265,6 +270,7 @@ class Client:
         self.shard_id: Optional[int] = options.get('shard_id')
         self.shard_count: Optional[int] = options.get('shard_count')
 
+        connector: Optional[aiohttp.BaseConnector] = options.get('connector', None)
         proxy: Optional[str] = options.pop('proxy', None)
         proxy_auth: Optional[aiohttp.BasicAuth] = options.pop('proxy_auth', None)
         unsync_clock: bool = options.pop('assume_unsync_clock', True)
@@ -272,6 +278,7 @@ class Client:
         max_ratelimit_timeout: Optional[float] = options.pop('max_ratelimit_timeout', None)
         self.http: HTTPClient = HTTPClient(
             self.loop,
+            connector,
             proxy=proxy,
             proxy_auth=proxy_auth,
             unsync_clock=unsync_clock,
@@ -360,7 +367,13 @@ class Client:
 
     @property
     def emojis(self) -> Sequence[Emoji]:
-        """Sequence[:class:`.Emoji`]: The emojis that the connected client has."""
+        """Sequence[:class:`.Emoji`]: The emojis that the connected client has.
+
+        .. note::
+
+            This not include the emojis that are owned by the application.
+            Use :meth:`.fetch_application_emoji` to get those.
+        """
         return self._connection.emojis
 
     @property
@@ -631,6 +644,11 @@ class Client:
         self._application = await self.application_info()
         if self._connection.application_id is None:
             self._connection.application_id = self._application.id
+
+        if self._application.interactions_endpoint_url is not None:
+            _log.warning(
+                'Application has an interaction endpoint URL set, this means registered components and app commands will not be received by the library.'
+            )
 
         if not self._connection.application_flags:
             self._connection.application_flags = self._application.flags
@@ -1187,8 +1205,7 @@ class Client:
         *,
         check: Optional[Callable[[RawAppCommandPermissionsUpdateEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawAppCommandPermissionsUpdateEvent:
-        ...
+    ) -> RawAppCommandPermissionsUpdateEvent: ...
 
     @overload
     async def wait_for(
@@ -1198,8 +1215,7 @@ class Client:
         *,
         check: Optional[Callable[[Interaction[Self], Union[Command[Any, ..., Any], ContextMenu]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Interaction[Self], Union[Command[Any, ..., Any], ContextMenu]]:
-        ...
+    ) -> Tuple[Interaction[Self], Union[Command[Any, ..., Any], ContextMenu]]: ...
 
     # AutoMod
 
@@ -1211,8 +1227,7 @@ class Client:
         *,
         check: Optional[Callable[[AutoModRule], bool]],
         timeout: Optional[float] = None,
-    ) -> AutoModRule:
-        ...
+    ) -> AutoModRule: ...
 
     @overload
     async def wait_for(
@@ -1222,8 +1237,7 @@ class Client:
         *,
         check: Optional[Callable[[AutoModAction], bool]],
         timeout: Optional[float] = None,
-    ) -> AutoModAction:
-        ...
+    ) -> AutoModAction: ...
 
     # Channels
 
@@ -1235,8 +1249,7 @@ class Client:
         *,
         check: Optional[Callable[[GroupChannel, GroupChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[GroupChannel, GroupChannel]:
-        ...
+    ) -> Tuple[GroupChannel, GroupChannel]: ...
 
     @overload
     async def wait_for(
@@ -1246,8 +1259,7 @@ class Client:
         *,
         check: Optional[Callable[[PrivateChannel, datetime.datetime], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[PrivateChannel, datetime.datetime]:
-        ...
+    ) -> Tuple[PrivateChannel, datetime.datetime]: ...
 
     @overload
     async def wait_for(
@@ -1257,8 +1269,7 @@ class Client:
         *,
         check: Optional[Callable[[GuildChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> GuildChannel:
-        ...
+    ) -> GuildChannel: ...
 
     @overload
     async def wait_for(
@@ -1268,8 +1279,7 @@ class Client:
         *,
         check: Optional[Callable[[GuildChannel, GuildChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[GuildChannel, GuildChannel]:
-        ...
+    ) -> Tuple[GuildChannel, GuildChannel]: ...
 
     @overload
     async def wait_for(
@@ -1284,8 +1294,7 @@ class Client:
             ]
         ],
         timeout: Optional[float] = None,
-    ) -> Tuple[Union[GuildChannel, Thread], Optional[datetime.datetime]]:
-        ...
+    ) -> Tuple[Union[GuildChannel, Thread], Optional[datetime.datetime]]: ...
 
     @overload
     async def wait_for(
@@ -1295,8 +1304,7 @@ class Client:
         *,
         check: Optional[Callable[[Messageable, Union[User, Member], datetime.datetime], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Messageable, Union[User, Member], datetime.datetime]:
-        ...
+    ) -> Tuple[Messageable, Union[User, Member], datetime.datetime]: ...
 
     @overload
     async def wait_for(
@@ -1306,8 +1314,7 @@ class Client:
         *,
         check: Optional[Callable[[RawTypingEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawTypingEvent:
-        ...
+    ) -> RawTypingEvent: ...
 
     # Debug & Gateway events
 
@@ -1319,8 +1326,7 @@ class Client:
         *,
         check: Optional[Callable[[], bool]],
         timeout: Optional[float] = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @overload
     async def wait_for(
@@ -1330,8 +1336,7 @@ class Client:
         *,
         check: Optional[Callable[[int], bool]],
         timeout: Optional[float] = None,
-    ) -> int:
-        ...
+    ) -> int: ...
 
     @overload
     async def wait_for(
@@ -1341,8 +1346,7 @@ class Client:
         *,
         check: Optional[Callable[[str], bool]],
         timeout: Optional[float] = None,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     @overload
     async def wait_for(
@@ -1352,8 +1356,7 @@ class Client:
         *,
         check: Optional[Callable[[Union[str, bytes]], bool]],
         timeout: Optional[float] = None,
-    ) -> Union[str, bytes]:
-        ...
+    ) -> Union[str, bytes]: ...
 
     # Guilds
 
@@ -1370,8 +1373,7 @@ class Client:
         *,
         check: Optional[Callable[[Guild], bool]],
         timeout: Optional[float] = None,
-    ) -> Guild:
-        ...
+    ) -> Guild: ...
 
     @overload
     async def wait_for(
@@ -1381,8 +1383,7 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Guild], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Guild]:
-        ...
+    ) -> Tuple[Guild, Guild]: ...
 
     @overload
     async def wait_for(
@@ -1392,8 +1393,7 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Sequence[Emoji], Sequence[Emoji]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Sequence[Emoji], Sequence[Emoji]]:
-        ...
+    ) -> Tuple[Guild, Sequence[Emoji], Sequence[Emoji]]: ...
 
     @overload
     async def wait_for(
@@ -1403,8 +1403,7 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Sequence[GuildSticker], Sequence[GuildSticker]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Sequence[GuildSticker], Sequence[GuildSticker]]:
-        ...
+    ) -> Tuple[Guild, Sequence[GuildSticker], Sequence[GuildSticker]]: ...
 
     @overload
     async def wait_for(
@@ -1414,8 +1413,7 @@ class Client:
         *,
         check: Optional[Callable[[Invite], bool]],
         timeout: Optional[float] = None,
-    ) -> Invite:
-        ...
+    ) -> Invite: ...
 
     @overload
     async def wait_for(
@@ -1425,8 +1423,7 @@ class Client:
         *,
         check: Optional[Callable[[AuditLogEntry], bool]],
         timeout: Optional[float] = None,
-    ) -> AuditLogEntry:
-        ...
+    ) -> AuditLogEntry: ...
 
     # Integrations
 
@@ -1438,8 +1435,7 @@ class Client:
         *,
         check: Optional[Callable[[Integration], bool]],
         timeout: Optional[float] = None,
-    ) -> Integration:
-        ...
+    ) -> Integration: ...
 
     @overload
     async def wait_for(
@@ -1449,8 +1445,7 @@ class Client:
         *,
         check: Optional[Callable[[Guild], bool]],
         timeout: Optional[float] = None,
-    ) -> Guild:
-        ...
+    ) -> Guild: ...
 
     @overload
     async def wait_for(
@@ -1460,8 +1455,7 @@ class Client:
         *,
         check: Optional[Callable[[GuildChannel], bool]],
         timeout: Optional[float] = None,
-    ) -> GuildChannel:
-        ...
+    ) -> GuildChannel: ...
 
     @overload
     async def wait_for(
@@ -1471,8 +1465,7 @@ class Client:
         *,
         check: Optional[Callable[[RawIntegrationDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawIntegrationDeleteEvent:
-        ...
+    ) -> RawIntegrationDeleteEvent: ...
 
     # Interactions
 
@@ -1484,8 +1477,7 @@ class Client:
         *,
         check: Optional[Callable[[Interaction[Self]], bool]],
         timeout: Optional[float] = None,
-    ) -> Interaction[Self]:
-        ...
+    ) -> Interaction[Self]: ...
 
     # Members
 
@@ -1497,8 +1489,7 @@ class Client:
         *,
         check: Optional[Callable[[Member], bool]],
         timeout: Optional[float] = None,
-    ) -> Member:
-        ...
+    ) -> Member: ...
 
     @overload
     async def wait_for(
@@ -1508,8 +1499,7 @@ class Client:
         *,
         check: Optional[Callable[[RawMemberRemoveEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawMemberRemoveEvent:
-        ...
+    ) -> RawMemberRemoveEvent: ...
 
     @overload
     async def wait_for(
@@ -1519,8 +1509,7 @@ class Client:
         *,
         check: Optional[Callable[[Member, Member], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Member, Member]:
-        ...
+    ) -> Tuple[Member, Member]: ...
 
     @overload
     async def wait_for(
@@ -1530,8 +1519,7 @@ class Client:
         *,
         check: Optional[Callable[[User, User], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[User, User]:
-        ...
+    ) -> Tuple[User, User]: ...
 
     @overload
     async def wait_for(
@@ -1541,8 +1529,7 @@ class Client:
         *,
         check: Optional[Callable[[Guild, Union[User, Member]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, Union[User, Member]]:
-        ...
+    ) -> Tuple[Guild, Union[User, Member]]: ...
 
     @overload
     async def wait_for(
@@ -1552,8 +1539,7 @@ class Client:
         *,
         check: Optional[Callable[[Guild, User], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Guild, User]:
-        ...
+    ) -> Tuple[Guild, User]: ...
 
     # Messages
 
@@ -1565,8 +1551,7 @@ class Client:
         *,
         check: Optional[Callable[[Message], bool]],
         timeout: Optional[float] = None,
-    ) -> Message:
-        ...
+    ) -> Message: ...
 
     @overload
     async def wait_for(
@@ -1576,8 +1561,7 @@ class Client:
         *,
         check: Optional[Callable[[Message, Message], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Message, Message]:
-        ...
+    ) -> Tuple[Message, Message]: ...
 
     @overload
     async def wait_for(
@@ -1587,8 +1571,7 @@ class Client:
         *,
         check: Optional[Callable[[List[Message]], bool]],
         timeout: Optional[float] = None,
-    ) -> List[Message]:
-        ...
+    ) -> List[Message]: ...
 
     @overload
     async def wait_for(
@@ -1598,8 +1581,7 @@ class Client:
         *,
         check: Optional[Callable[[RawMessageUpdateEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawMessageUpdateEvent:
-        ...
+    ) -> RawMessageUpdateEvent: ...
 
     @overload
     async def wait_for(
@@ -1609,8 +1591,7 @@ class Client:
         *,
         check: Optional[Callable[[RawMessageDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawMessageDeleteEvent:
-        ...
+    ) -> RawMessageDeleteEvent: ...
 
     @overload
     async def wait_for(
@@ -1620,8 +1601,7 @@ class Client:
         *,
         check: Optional[Callable[[RawBulkMessageDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawBulkMessageDeleteEvent:
-        ...
+    ) -> RawBulkMessageDeleteEvent: ...
 
     # Reactions
 
@@ -1633,8 +1613,7 @@ class Client:
         *,
         check: Optional[Callable[[Reaction, Union[Member, User]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Reaction, Union[Member, User]]:
-        ...
+    ) -> Tuple[Reaction, Union[Member, User]]: ...
 
     @overload
     async def wait_for(
@@ -1644,8 +1623,7 @@ class Client:
         *,
         check: Optional[Callable[[Message, List[Reaction]], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Message, List[Reaction]]:
-        ...
+    ) -> Tuple[Message, List[Reaction]]: ...
 
     @overload
     async def wait_for(
@@ -1655,8 +1633,7 @@ class Client:
         *,
         check: Optional[Callable[[Reaction], bool]],
         timeout: Optional[float] = None,
-    ) -> Reaction:
-        ...
+    ) -> Reaction: ...
 
     @overload
     async def wait_for(
@@ -1666,8 +1643,7 @@ class Client:
         *,
         check: Optional[Callable[[RawReactionActionEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawReactionActionEvent:
-        ...
+    ) -> RawReactionActionEvent: ...
 
     @overload
     async def wait_for(
@@ -1677,8 +1653,7 @@ class Client:
         *,
         check: Optional[Callable[[RawReactionClearEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawReactionClearEvent:
-        ...
+    ) -> RawReactionClearEvent: ...
 
     @overload
     async def wait_for(
@@ -1688,8 +1663,7 @@ class Client:
         *,
         check: Optional[Callable[[RawReactionClearEmojiEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawReactionClearEmojiEvent:
-        ...
+    ) -> RawReactionClearEmojiEvent: ...
 
     # Roles
 
@@ -1701,8 +1675,7 @@ class Client:
         *,
         check: Optional[Callable[[Role], bool]],
         timeout: Optional[float] = None,
-    ) -> Role:
-        ...
+    ) -> Role: ...
 
     @overload
     async def wait_for(
@@ -1712,8 +1685,7 @@ class Client:
         *,
         check: Optional[Callable[[Role, Role], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Role, Role]:
-        ...
+    ) -> Tuple[Role, Role]: ...
 
     # Scheduled Events
 
@@ -1725,8 +1697,7 @@ class Client:
         *,
         check: Optional[Callable[[ScheduledEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> ScheduledEvent:
-        ...
+    ) -> ScheduledEvent: ...
 
     @overload
     async def wait_for(
@@ -1736,8 +1707,7 @@ class Client:
         *,
         check: Optional[Callable[[ScheduledEvent, User], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[ScheduledEvent, User]:
-        ...
+    ) -> Tuple[ScheduledEvent, User]: ...
 
     # Stages
 
@@ -1749,8 +1719,7 @@ class Client:
         *,
         check: Optional[Callable[[StageInstance], bool]],
         timeout: Optional[float] = None,
-    ) -> StageInstance:
-        ...
+    ) -> StageInstance: ...
 
     @overload
     async def wait_for(
@@ -1760,8 +1729,7 @@ class Client:
         *,
         check: Optional[Callable[[StageInstance, StageInstance], bool]],
         timeout: Optional[float] = None,
-    ) -> Coroutine[Any, Any, Tuple[StageInstance, StageInstance]]:
-        ...
+    ) -> Coroutine[Any, Any, Tuple[StageInstance, StageInstance]]: ...
 
     # Threads
     @overload
@@ -1772,8 +1740,7 @@ class Client:
         *,
         check: Optional[Callable[[Thread], bool]],
         timeout: Optional[float] = None,
-    ) -> Thread:
-        ...
+    ) -> Thread: ...
 
     @overload
     async def wait_for(
@@ -1783,8 +1750,7 @@ class Client:
         *,
         check: Optional[Callable[[Thread, Thread], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Thread, Thread]:
-        ...
+    ) -> Tuple[Thread, Thread]: ...
 
     @overload
     async def wait_for(
@@ -1794,8 +1760,7 @@ class Client:
         *,
         check: Optional[Callable[[RawThreadUpdateEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawThreadUpdateEvent:
-        ...
+    ) -> RawThreadUpdateEvent: ...
 
     @overload
     async def wait_for(
@@ -1805,8 +1770,7 @@ class Client:
         *,
         check: Optional[Callable[[RawThreadDeleteEvent], bool]],
         timeout: Optional[float] = None,
-    ) -> RawThreadDeleteEvent:
-        ...
+    ) -> RawThreadDeleteEvent: ...
 
     @overload
     async def wait_for(
@@ -1816,8 +1780,7 @@ class Client:
         *,
         check: Optional[Callable[[ThreadMember], bool]],
         timeout: Optional[float] = None,
-    ) -> ThreadMember:
-        ...
+    ) -> ThreadMember: ...
 
     @overload
     async def wait_for(
@@ -1827,8 +1790,7 @@ class Client:
         *,
         check: Optional[Callable[[RawThreadMembersUpdate], bool]],
         timeout: Optional[float] = None,
-    ) -> RawThreadMembersUpdate:
-        ...
+    ) -> RawThreadMembersUpdate: ...
 
     # Voice
 
@@ -1840,8 +1802,7 @@ class Client:
         *,
         check: Optional[Callable[[Member, VoiceState, VoiceState], bool]],
         timeout: Optional[float] = None,
-    ) -> Tuple[Member, VoiceState, VoiceState]:
-        ...
+    ) -> Tuple[Member, VoiceState, VoiceState]: ...
 
     # Polls
 
@@ -1853,8 +1814,7 @@ class Client:
         *,
         check: Optional[Callable[[Union[User, Member], PollAnswer], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Tuple[Union[User, Member], PollAnswer]:
-        ...
+    ) -> Tuple[Union[User, Member], PollAnswer]: ...
 
     @overload
     async def wait_for(
@@ -1864,8 +1824,7 @@ class Client:
         *,
         check: Optional[Callable[[RawPollVoteActionEvent], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> RawPollVoteActionEvent:
-        ...
+    ) -> RawPollVoteActionEvent: ...
 
     # Commands
 
@@ -1877,8 +1836,7 @@ class Client:
         *,
         check: Optional[Callable[[Context[Any]], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Context[Any]:
-        ...
+    ) -> Context[Any]: ...
 
     @overload
     async def wait_for(
@@ -1888,8 +1846,7 @@ class Client:
         *,
         check: Optional[Callable[[Context[Any], CommandError], bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Tuple[Context[Any], CommandError]:
-        ...
+    ) -> Tuple[Context[Any], CommandError]: ...
 
     @overload
     async def wait_for(
@@ -1899,8 +1856,7 @@ class Client:
         *,
         check: Optional[Callable[..., bool]] = None,
         timeout: Optional[float] = None,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
     def wait_for(
         self,
@@ -2965,6 +2921,33 @@ class Client:
         data = await self.http.get_soundboard_default_sounds()
         return [SoundboardDefaultSound(state=self._connection, data=sound) for sound in data]
 
+    async def fetch_premium_sticker_pack(self, sticker_pack_id: int, /) -> StickerPack:
+        """|coro|
+
+        Retrieves a premium sticker pack with the specified ID.
+
+        .. versionadded:: 2.5
+
+        Parameters
+        ----------
+        sticker_pack_id: :class:`int`
+            The sticker pack's ID to fetch from.
+
+        Raises
+        -------
+        NotFound
+            A sticker pack with this ID does not exist.
+        HTTPException
+            Retrieving the sticker pack failed.
+
+        Returns
+        -------
+        :class:`.StickerPack`
+            The retrieved premium sticker pack.
+        """
+        data = await self.http.get_sticker_pack(sticker_pack_id)
+        return StickerPack(state=self._connection, data=data)
+
     async def create_dm(self, user: Snowflake) -> DMChannel:
         """|coro|
 
@@ -3085,3 +3068,97 @@ class Client:
         .. versionadded:: 2.0
         """
         return self._connection.persistent_views
+
+    async def create_application_emoji(
+        self,
+        *,
+        name: str,
+        image: bytes,
+    ) -> Emoji:
+        """|coro|
+
+        Create an emoji for the current application.
+
+        .. versionadded:: 2.5
+
+        Parameters
+        ----------
+        name: :class:`str`
+            The emoji name. Must be at least 2 characters.
+        image: :class:`bytes`
+            The :term:`py:bytes-like object` representing the image data to use.
+            Only JPG, PNG and GIF images are supported.
+
+        Raises
+        ------
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Creating the emoji failed.
+
+        Returns
+        -------
+        :class:`.Emoji`
+            The emoji that was created.
+        """
+        if self.application_id is None:
+            raise MissingApplicationID
+
+        img = utils._bytes_to_base64_data(image)
+        data = await self.http.create_application_emoji(self.application_id, name, img)
+        return Emoji(guild=Object(0), state=self._connection, data=data)
+
+    async def fetch_application_emoji(self, emoji_id: int, /) -> Emoji:
+        """|coro|
+
+        Retrieves an emoji for the current application.
+
+        .. versionadded:: 2.5
+
+        Parameters
+        ----------
+        emoji_id: :class:`int`
+            The emoji ID to retrieve.
+
+        Raises
+        ------
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Retrieving the emoji failed.
+
+        Returns
+        -------
+        :class:`.Emoji`
+            The emoji requested.
+        """
+        if self.application_id is None:
+            raise MissingApplicationID
+
+        data = await self.http.get_application_emoji(self.application_id, emoji_id)
+        return Emoji(guild=Object(0), state=self._connection, data=data)
+
+    async def fetch_application_emojis(self) -> List[Emoji]:
+        """|coro|
+
+        Retrieves all emojis for the current application.
+
+        .. versionadded:: 2.5
+
+        Raises
+        -------
+        MissingApplicationID
+            The application ID could not be found.
+        HTTPException
+            Retrieving the emojis failed.
+
+        Returns
+        -------
+        List[:class:`.Emoji`]
+            The list of emojis for the current application.
+        """
+        if self.application_id is None:
+            raise MissingApplicationID
+
+        data = await self.http.get_application_emojis(self.application_id)
+        return [Emoji(guild=Object(0), state=self._connection, data=emoji) for emoji in data['items']]
