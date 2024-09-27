@@ -35,6 +35,7 @@ __all__ = (
 if TYPE_CHECKING:
     from typing_extensions import Self
 
+
 # A permission alias works like a regular flag but is marked
 # So the PermissionOverwrite knows to work with it
 class permission_alias(alias_flag_value):
@@ -187,7 +188,7 @@ class Permissions(BaseFlags):
         permissions set to ``True``.
         """
         # Some of these are 0 because we don't want to set unnecessary bits
-        return cls(0b0000_0000_0000_0110_0111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111)
+        return cls(0b0000_0000_0000_0111_0111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111)
 
     @classmethod
     def _timeout_mask(cls) -> int:
@@ -314,8 +315,12 @@ class Permissions(BaseFlags):
     @classmethod
     def voice(cls) -> Self:
         """A factory method that creates a :class:`Permissions` with all
-        "Voice" permissions from the official Discord UI set to ``True``."""
-        return cls(0b0000_0000_0000_0000_0010_0100_1000_0000_0000_0011_1111_0000_0000_0011_0000_0000)
+        "Voice" permissions from the official Discord UI set to ``True``.
+
+        .. versionchanged:: 2.4
+            Added :attr:`set_voice_channel_status` permission.
+        """
+        return cls(0b0000_0000_0000_0001_0010_0100_1000_0000_0000_0011_1111_0000_0000_0011_0000_0000)
 
     @classmethod
     def stage(cls) -> Self:
@@ -784,6 +789,14 @@ class Permissions(BaseFlags):
         """
         return 1 << 50
 
+    @flag_value
+    def set_voice_channel_status(self) -> int:
+        """:class:`bool`: Returns ``True`` if a user can set the status of voice channels.
+
+        .. versionadded:: 2.4
+        """
+        return 1 << 48
+
 
 def _augment_from_permissions(cls):
     cls.VALID_NAMES = set(Permissions.VALID_FLAGS)
@@ -907,6 +920,7 @@ class PermissionOverwrite:
         send_polls: Optional[bool]
         create_polls: Optional[bool]
         use_external_apps: Optional[bool]
+        set_voice_channel_status: Optional[bool]
 
     def __init__(self, **kwargs: Optional[bool]):
         self._values: Dict[str, Optional[bool]] = {}

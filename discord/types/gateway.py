@@ -353,6 +353,12 @@ class GuildAuditLogEntryCreate(AuditLogEntry):
     guild_id: Snowflake
 
 
+class VoiceChannelStatusUpdate(TypedDict):
+    id: Snowflake
+    guild_id: Snowflake
+    status: Optional[str]
+
+
 EntitlementCreateEvent = EntitlementUpdateEvent = EntitlementDeleteEvent = Entitlement
 
 
