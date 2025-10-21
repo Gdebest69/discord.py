@@ -66,6 +66,7 @@ if TYPE_CHECKING:
     from ..message import Attachment
     from ..abc import Snowflake
     from ..state import ConnectionState
+    from ..ui.view import BaseView, View, LayoutView
     from ..types.webhook import (
         Webhook as WebhookPayload,
     )
@@ -290,8 +291,9 @@ class WebhookAdapter:
         files: Optional[Sequence[File]] = None,
         thread_id: Optional[int] = None,
         wait: bool = False,
+        with_components: bool = False,
     ) -> MessagePayload:
-        params = {'wait': int(wait)}
+        params = {'wait': int(wait), 'with_components': int(with_components)}
         if thread_id:
             params['thread_id'] = thread_id
         route = Route('POST', '/webhooks/{webhook_id}/{webhook_token}', webhook_id=webhook_id, webhook_token=token)
@@ -857,6 +859,42 @@ class SyncWebhook(BaseWebhook):
     @overload
     def send(
         self,
+        *,
+        username: str = MISSING,
+        avatar_url: Any = MISSING,
+        file: File = MISSING,
+        files: Sequence[File] = MISSING,
+        allowed_mentions: AllowedMentions = MISSING,
+        view: LayoutView,
+        wait: Literal[True],
+        thread: Snowflake = MISSING,
+        thread_name: str = MISSING,
+        suppress_embeds: bool = MISSING,
+        silent: bool = MISSING,
+        applied_tags: List[ForumTag] = MISSING,
+    ) -> SyncWebhookMessage: ...
+
+    @overload
+    def send(
+        self,
+        *,
+        username: str = MISSING,
+        avatar_url: Any = MISSING,
+        file: File = MISSING,
+        files: Sequence[File] = MISSING,
+        allowed_mentions: AllowedMentions = MISSING,
+        view: LayoutView,
+        wait: Literal[False] = ...,
+        thread: Snowflake = MISSING,
+        thread_name: str = MISSING,
+        suppress_embeds: bool = MISSING,
+        silent: bool = MISSING,
+        applied_tags: List[ForumTag] = MISSING,
+    ) -> None: ...
+
+    @overload
+    def send(
+        self,
         content: str = MISSING,
         *,
         username: str = MISSING,
@@ -874,8 +912,8 @@ class SyncWebhook(BaseWebhook):
         silent: bool = MISSING,
         applied_tags: List[ForumTag] = MISSING,
         poll: Poll = MISSING,
-    ) -> SyncWebhookMessage:
-        ...
+        view: View = MISSING,
+    ) -> SyncWebhookMessage: ...
 
     @overload
     def send(
@@ -897,8 +935,8 @@ class SyncWebhook(BaseWebhook):
         silent: bool = MISSING,
         applied_tags: List[ForumTag] = MISSING,
         poll: Poll = MISSING,
-    ) -> None:
-        ...
+        view: View = MISSING,
+    ) -> None: ...
 
     def send(
         self,
@@ -919,6 +957,7 @@ class SyncWebhook(BaseWebhook):
         silent: bool = False,
         applied_tags: List[ForumTag] = MISSING,
         poll: Poll = MISSING,
+        view: BaseView = MISSING,
     ) -> Optional[SyncWebhookMessage]:
         """Sends a message using the webhook.
 
@@ -991,6 +1030,13 @@ class SyncWebhook(BaseWebhook):
                 When sending a Poll via webhook, you cannot manually end it.
 
             .. versionadded:: 2.4
+        view: Union[:class:`~discord.ui.View`, :class:`~discord.ui.LayoutView`]
+            The view to send with the message. This can only have non-interactible items, which do not
+            require a state to be attached to it.
+
+            If you want to send a view with any component attached to it, check :meth:`Webhook.send`.
+
+            .. versionadded:: 2.5
 
         Raises
         --------
@@ -1004,8 +1050,9 @@ class SyncWebhook(BaseWebhook):
             You specified both ``embed`` and ``embeds`` or ``file`` and ``files``
             or ``thread`` and ``thread_name``.
         ValueError
-            The length of ``embeds`` was invalid or
-            there was no token associated with this webhook.
+            The length of ``embeds`` was invalid, there was no token
+            associated with this webhook or you tried to send a view
+            with components other than URL buttons.
 
         Returns
         ---------
@@ -1026,6 +1073,13 @@ class SyncWebhook(BaseWebhook):
             flags.suppress_notifications = silent
         else:
             flags = MISSING
+
+        if view is not MISSING:
+            if not hasattr(view, '__discord_ui_view__'):
+                raise TypeError(f'expected view parameter to be of type View not {view.__class__.__name__}')
+
+            if view.is_dispatchable():
+                raise ValueError('SyncWebhook views can only contain URL buttons')
 
         if thread_name is not MISSING and thread is not MISSING:
             raise TypeError('Cannot mix thread_name and thread keyword arguments.')
@@ -1050,6 +1104,7 @@ class SyncWebhook(BaseWebhook):
             flags=flags,
             applied_tags=applied_tag_ids,
             poll=poll,
+            view=view,
         ) as params:
             adapter: WebhookAdapter = _get_webhook_adapter()
             thread_id: Optional[int] = None
@@ -1065,6 +1120,7 @@ class SyncWebhook(BaseWebhook):
                 files=params.files,
                 thread_id=thread_id,
                 wait=wait,
+                with_components=view is not MISSING,
             )
 
         msg = None
@@ -1123,6 +1179,31 @@ class SyncWebhook(BaseWebhook):
         )
         return self._create_message(data, thread=thread)
 
+    @overload
+    def edit_message(
+        self,
+        message_id: int,
+        *,
+        attachments: Sequence[Union[Attachment, File]] = ...,
+        view: LayoutView,
+        allowed_mentions: Optional[AllowedMentions] = ...,
+        thread: Snowflake = ...,
+    ) -> SyncWebhookMessage: ...
+
+    @overload
+    def edit_message(
+        self,
+        message_id: int,
+        *,
+        content: Optional[str] = ...,
+        embeds: Sequence[Embed] = ...,
+        embed: Optional[Embed] = ...,
+        attachments: Sequence[Union[Attachment, File]] = ...,
+        view: Optional[View] = ...,
+        allowed_mentions: Optional[AllowedMentions] = ...,
+        thread: Snowflake = ...,
+    ) -> SyncWebhookMessage: ...
+
     def edit_message(
         self,
         message_id: int,
@@ -1131,6 +1212,7 @@ class SyncWebhook(BaseWebhook):
         embeds: Sequence[Embed] = MISSING,
         embed: Optional[Embed] = MISSING,
         attachments: Sequence[Union[Attachment, File]] = MISSING,
+        view: Optional[BaseView] = MISSING,
         allowed_mentions: Optional[AllowedMentions] = None,
         thread: Snowflake = MISSING,
     ) -> SyncWebhookMessage:
@@ -1157,6 +1239,13 @@ class SyncWebhook(BaseWebhook):
             then all attachments are removed.
 
             .. versionadded:: 2.0
+        view: Optional[Union[:class:`~discord.ui.View`, :class:`~discord.ui.LayoutView`]]
+            The updated view to update this message with. This can only have non-interactible items, which do not
+            require a state to be attached to it. If ``None`` is passed then the view is removed.
+
+            If you want to edit a webhook message with any component attached to it, check :meth:`WebhookMessage.edit`.
+
+            .. versionadded:: 2.6
         allowed_mentions: :class:`AllowedMentions`
             Controls the mentions being processed in this message.
             See :meth:`.abc.Messageable.send` for more information.

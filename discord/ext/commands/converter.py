@@ -82,6 +82,7 @@ __all__ = (
     'GuildChannelConverter',
     'GuildStickerConverter',
     'ScheduledEventConverter',
+    'SoundboardSoundConverter',
     'clean_content',
     'Greedy',
     'Range',
@@ -951,6 +952,44 @@ class ScheduledEventConverter(IDConverter[discord.ScheduledEvent]):
         return result
 
 
+class SoundboardSoundConverter(IDConverter[discord.SoundboardSound]):
+    """Converts to a :class:`~discord.SoundboardSound`.
+
+    Lookups are done for the local guild if available. Otherwise, for a DM context,
+    lookup is done by the global cache.
+
+    The lookup strategy is as follows (in order):
+
+    1. Lookup by ID.
+    2. Lookup by name.
+
+    .. versionadded:: 2.5
+    """
+
+    async def convert(self, ctx: Context[BotT], argument: str) -> discord.SoundboardSound:
+        guild = ctx.guild
+        match = self._get_id_match(argument)
+        result = None
+
+        if match:
+            # ID match
+            sound_id = int(match.group(1))
+            if guild:
+                result = guild.get_soundboard_sound(sound_id)
+            else:
+                result = ctx.bot.get_soundboard_sound(sound_id)
+        else:
+            # lookup by name
+            if guild:
+                result = discord.utils.get(guild.soundboard_sounds, name=argument)
+            else:
+                result = discord.utils.get(ctx.bot.soundboard_sounds, name=argument)
+        if result is None:
+            raise SoundboardSoundNotFound(argument)
+
+        return result
+
+
 class clean_content(Converter[str]):
     """Converts the argument to mention scrubbed version of
     said content.
@@ -1086,7 +1125,7 @@ class Greedy(List[T]):
 
         args = getattr(converter, '__args__', ())
         if discord.utils.PY_310 and converter.__class__ is types.UnionType:  # type: ignore
-            converter = Union[args]  # type: ignore
+            converter = Union[args]
 
         origin = getattr(converter, '__origin__', None)
 
@@ -1099,7 +1138,7 @@ class Greedy(List[T]):
         if origin is Union and type(None) in args:
             raise TypeError(f'Greedy[{converter!r}] is invalid.')
 
-        return cls(converter=converter)
+        return cls(converter=converter)  # type: ignore
 
     @property
     def constructed_converter(self) -> Any:
@@ -1263,6 +1302,7 @@ CONVERTER_MAPPING: Dict[type, Any] = {
     discord.GuildSticker: GuildStickerConverter,
     discord.ScheduledEvent: ScheduledEventConverter,
     discord.ForumChannel: ForumChannelConverter,
+    discord.SoundboardSound: SoundboardSoundConverter,
 }
 
 
@@ -1285,7 +1325,7 @@ async def _actual_conversion(ctx: Context[BotT], converter: Any, argument: str, 
             else:
                 return await converter().convert(ctx, argument)
         elif isinstance(converter, Converter):
-            return await converter.convert(ctx, argument)  # type: ignore
+            return await converter.convert(ctx, argument)
     except CommandError:
         raise
     except Exception as exc:
@@ -1307,13 +1347,11 @@ async def _actual_conversion(ctx: Context[BotT], converter: Any, argument: str, 
 @overload
 async def run_converters(
     ctx: Context[BotT], converter: Union[Type[Converter[T]], Converter[T]], argument: str, param: Parameter
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
-async def run_converters(ctx: Context[BotT], converter: Any, argument: str, param: Parameter) -> Any:
-    ...
+async def run_converters(ctx: Context[BotT], converter: Any, argument: str, param: Parameter) -> Any: ...
 
 
 async def run_converters(ctx: Context[BotT], converter: Any, argument: str, param: Parameter) -> Any:

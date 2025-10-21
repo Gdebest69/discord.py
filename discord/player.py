@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
+
 from __future__ import annotations
 
 import threading
@@ -163,7 +164,7 @@ class FFmpegAudio(AudioSource):
         stderr: Optional[IO[bytes]] = subprocess_kwargs.pop('stderr', None)
 
         if stderr == subprocess.PIPE:
-            warnings.warn("Passing subprocess.PIPE does nothing", DeprecationWarning, stacklevel=3)
+            warnings.warn('Passing subprocess.PIPE does nothing', DeprecationWarning, stacklevel=3)
             stderr = None
 
         piping_stderr = False
@@ -573,7 +574,7 @@ class FFmpegOpusAudio(FFmpegAudio):
         if isinstance(method, str):
             probefunc = getattr(cls, '_probe_codec_' + method, None)
             if probefunc is None:
-                raise AttributeError(f"Invalid probe method {method!r}")
+                raise AttributeError(f'Invalid probe method {method!r}')
 
             if probefunc is cls._probe_codec_native:
                 fallback = cls._probe_codec_fallback
@@ -588,22 +589,26 @@ class FFmpegOpusAudio(FFmpegAudio):
         loop = asyncio.get_running_loop()
         try:
             codec, bitrate = await loop.run_in_executor(None, lambda: probefunc(source, executable))
-        except Exception:
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except BaseException:
             if not fallback:
                 _log.exception("Probe '%s' using '%s' failed", method, executable)
-                return  # type: ignore
+                return None, None
 
             _log.exception("Probe '%s' using '%s' failed, trying fallback", method, executable)
             try:
                 codec, bitrate = await loop.run_in_executor(None, lambda: fallback(source, executable))
-            except Exception:
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except BaseException:
                 _log.exception("Fallback probe using '%s' failed", executable)
             else:
-                _log.debug("Fallback probe found codec=%s, bitrate=%s", codec, bitrate)
+                _log.debug('Fallback probe found codec=%s, bitrate=%s', codec, bitrate)
         else:
-            _log.debug("Probe found codec=%s, bitrate=%s", codec, bitrate)
-        finally:
-            return codec, bitrate
+            _log.debug('Probe found codec=%s, bitrate=%s', codec, bitrate)
+
+        return codec, bitrate
 
     @staticmethod
     def _probe_codec_native(source, executable: str = 'ffmpeg') -> Tuple[Optional[str], Optional[int]]:
@@ -630,11 +635,11 @@ class FFmpegOpusAudio(FFmpegAudio):
         output = out.decode('utf8')
         codec = bitrate = None
 
-        codec_match = re.search(r"Stream #0.*?Audio: (\w+)", output)
+        codec_match = re.search(r'Stream #0.*?Audio: (\w+)', output)
         if codec_match:
             codec = codec_match.group(1)
 
-        br_match = re.search(r"(\d+) [kK]b/s", output)
+        br_match = re.search(r'(\d+) [kK]b/s', output)
         if br_match:
             bitrate = max(int(br_match.group(1)), 512)
 
@@ -821,7 +826,7 @@ class AudioPlayer(threading.Thread):
         try:
             asyncio.run_coroutine_threadsafe(self.client.ws.speak(speaking), self.client.client.loop)
         except Exception:
-            _log.exception("Speaking call in player failed")
+            _log.exception('Speaking call in player failed')
 
     def send_silence(self, count: int = 5) -> None:
         try:

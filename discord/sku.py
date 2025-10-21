@@ -22,10 +22,11 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-
 from __future__ import annotations
 
 from typing import AsyncIterator, Optional, TYPE_CHECKING
+
+from datetime import datetime
 
 from . import utils
 from .enums import try_enum, SKUType, EntitlementType
@@ -34,8 +35,6 @@ from .object import Object
 from .subscription import Subscription
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
     from .abc import SnowflakeTime, Snowflake
     from .guild import Guild
     from .state import ConnectionState
@@ -146,12 +145,12 @@ class SKU:
 
         Usage ::
 
-            async for subscription in sku.subscriptions(limit=100):
+            async for subscription in sku.subscriptions(limit=100, user=user):
                 print(subscription.user_id, subscription.current_period_end)
 
         Flattening into a list ::
 
-            subscriptions = [subscription async for subscription in sku.subscriptions(limit=100)]
+            subscriptions = [subscription async for subscription in sku.subscriptions(limit=100, user=user)]
             # subscriptions is now a list of Subscription...
 
         All parameters are optional.
@@ -239,7 +238,7 @@ class SKU:
             data, state, limit = await strategy(retrieve, state, limit)
 
             # Terminate loop on next iteration; there's no data left after this
-            if len(data) < 1000:
+            if len(data) < 100:
                 limit = 0
 
             for e in data:

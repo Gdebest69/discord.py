@@ -92,8 +92,7 @@ class MessageDeleteBulkEvent(TypedDict):
     guild_id: NotRequired[Snowflake]
 
 
-class MessageUpdateEvent(Message):
-    channel_id: Snowflake
+MessageUpdateEvent = MessageCreateEvent
 
 
 class MessageReactionAddEvent(TypedDict):
@@ -146,6 +145,7 @@ class InviteCreateEvent(TypedDict):
     code: str
     created_at: str
     max_age: int
+    expires_at: Optional[str]
     max_uses: int
     temporary: bool
     uses: Literal[0]
@@ -324,7 +324,11 @@ VoiceStateUpdateEvent = GuildVoiceState
 VoiceChannelEffectSendEvent = VoiceChannelEffect
 
 GuildSoundBoardSoundCreateEvent = GuildSoundBoardSoundUpdateEvent = SoundboardSound
-GuildSoundBoardSoundsUpdateEvent = List[SoundboardSound]
+
+
+class GuildSoundBoardSoundsUpdateEvent(TypedDict):
+    guild_id: Snowflake
+    soundboard_sounds: List[SoundboardSound]
 
 
 class GuildSoundBoardSoundDeleteEvent(TypedDict):

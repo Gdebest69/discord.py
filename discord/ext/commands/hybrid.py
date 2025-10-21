@@ -24,26 +24,14 @@ DEALINGS IN THE SOFTWARE.
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    List,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    Optional,
-)
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Tuple, Type, TypeVar, Union, Optional
 
 import discord
 import inspect
 from discord import app_commands
 from discord.utils import MISSING, maybe_coroutine, async_all
 from .core import Command, Group
-from .errors import BadArgument, CommandRegistrationError, CommandError, HybridCommandError, ConversionError
+from .errors import BadArgument, CommandRegistrationError, CommandError, HybridCommandError, ConversionError, DisabledCommand
 from .converter import Converter, Range, Greedy, run_converters, CONVERTER_MAPPING
 from .parameters import Parameter
 from .flags import is_flag, FlagConverter
@@ -51,7 +39,7 @@ from .cog import Cog
 from .view import StringView
 
 if TYPE_CHECKING:
-    from typing_extensions import Self, ParamSpec, Concatenate
+    from typing_extensions import Self, ParamSpec, Concatenate, Unpack
     from ._types import ContextT, Coro, BotT
     from .bot import Bot
     from .context import Context
@@ -60,6 +48,31 @@ if TYPE_CHECKING:
         AutocompleteCallback,
         ChoiceT,
     )
+    from .core import _CommandKwargs
+
+    class _HybridCommandKwargs(_CommandKwargs, total=False):
+        guild_ids: list[int]
+        guild_only: bool
+        default_permissions: bool
+        nsfw: bool
+        with_app_command: bool
+
+    class _HybridCommandDecoratorKwargs(_HybridCommandKwargs, total=False):
+        description: Union[str, app_commands.locale_str]
+
+    class _HybridGroupKwargs(_HybridCommandDecoratorKwargs, total=False):
+        with_app_command: bool
+        guild_ids: list[int]
+        guild_only: bool
+        default_permissions: bool
+        nsfw: bool
+        description: str
+        case_insensitive: bool
+
+    class _HybridGroupDecoratorKwargs(_HybridGroupKwargs, total=False):
+        description: Union[str, app_commands.locale_str]
+        fallback: Optional[str]
+        fallback_locale: Optional[app_commands.locale_str]
 
 
 __all__ = (
@@ -203,9 +216,9 @@ def replace_parameter(
         # Fallback to see if the behaviour needs changing
         origin = getattr(converter, '__origin__', None)
         args = getattr(converter, '__args__', [])
-        if isinstance(converter, Range):
+        if isinstance(converter, Range):  # type: ignore # Range is not an Annotation at runtime
             r = converter
-            param = param.replace(annotation=app_commands.Range[r.annotation, r.min, r.max])
+            param = param.replace(annotation=app_commands.Range[r.annotation, r.min, r.max])  # type: ignore
         elif isinstance(converter, Greedy):
             # Greedy is "optional" in ext.commands
             # However, in here, it probably makes sense to make it required.
@@ -234,6 +247,12 @@ def replace_parameter(
                     descriptions[name] = flag.description
                 if flag.name != flag.attribute:
                     renames[name] = flag.name
+                if pseudo.default is not pseudo.empty:
+                    # This ensures the default is wrapped around _CallableDefault if callable
+                    # else leaves it as-is.
+                    pseudo = pseudo.replace(
+                        default=_CallableDefault(flag.default) if callable(flag.default) else flag.default
+                    )
 
                 mapping[name] = pseudo
 
@@ -250,8 +269,8 @@ def replace_parameter(
                 # Special case Optional[X] where X is a single type that can optionally be a converter
                 inner = args[0]
                 is_inner_transformer = is_transformer(inner)
-                if is_converter(inner) and not is_inner_transformer:
-                    param = param.replace(annotation=Optional[ConverterTransformer(inner, original)])  # type: ignore
+                if (is_converter(inner) or inner in CONVERTER_MAPPING) and not is_inner_transformer:
+                    param = param.replace(annotation=Optional[ConverterTransformer(inner, original)])
             else:
                 raise
         elif origin:
@@ -283,7 +302,7 @@ def replace_parameters(
             param = param.replace(default=default)
 
         if isinstance(param.default, Parameter):
-            # If we're here, then then it hasn't been handled yet so it should be removed completely
+            # If we're here, then it hasn't been handled yet so it should be removed completely
             param = param.replace(default=parameter.empty)
 
         # Flags are flattened out and thus don't get their parameter in the actual mapping
@@ -418,10 +437,10 @@ class HybridAppCommand(discord.app_commands.Command[CogT, P, T]):
                 if not ret:
                     return False
 
-        if self.checks and not await async_all(f(interaction) for f in self.checks):
+        if self.checks and not await async_all(f(interaction) for f in self.checks):  # type: ignore
             return False
 
-        if self.wrapped.checks and not await async_all(f(ctx) for f in self.wrapped.checks):
+        if self.wrapped.checks and not await async_all(f(ctx) for f in self.wrapped.checks):  # type: ignore
             return False
 
         return True
@@ -495,7 +514,7 @@ class HybridCommand(Command[CogT, P, T]):
         *,
         name: Union[str, app_commands.locale_str] = MISSING,
         description: Union[str, app_commands.locale_str] = MISSING,
-        **kwargs: Any,
+        **kwargs: Unpack[_HybridCommandKwargs],  # type: ignore # name, description
     ) -> None:
         name, name_locale = (name.message, name) if isinstance(name, app_commands.locale_str) else (name, None)
         if name is not MISSING:
@@ -526,6 +545,9 @@ class HybridCommand(Command[CogT, P, T]):
             self.app_command.binding = value
 
     async def can_run(self, ctx: Context[BotT], /) -> bool:
+        if not self.enabled:
+            raise DisabledCommand(f'{self.name} command is disabled')
+
         if ctx.interaction is not None and self.app_command:
             return await self.app_command._check_can_run(ctx.interaction)
         else:
@@ -612,7 +634,7 @@ class HybridGroup(Group[CogT, P, T]):
         name: Union[str, app_commands.locale_str] = MISSING,
         description: Union[str, app_commands.locale_str] = MISSING,
         fallback: Optional[Union[str, app_commands.locale_str]] = None,
-        **attrs: Any,
+        **attrs: Unpack[_HybridGroupKwargs],  # type: ignore # name, description
     ) -> None:
         name, name_locale = (name.message, name) if isinstance(name, app_commands.locale_str) else (name, None)
         if name is not MISSING:
@@ -647,9 +669,9 @@ class HybridGroup(Group[CogT, P, T]):
         self.fallback_locale: Optional[app_commands.locale_str] = fallback_locale
 
         if self.with_app_command:
-            guild_ids = attrs.pop('guild_ids', None) or getattr(
-                self.callback, '__discord_app_commands_default_guilds__', None
-            )
+            guild_ids = attrs.pop('guild_ids', None)
+            if guild_ids is None:
+                guild_ids = getattr(self.callback, '__discord_app_commands_default_guilds__', None)
             guild_only = getattr(self.callback, '__discord_app_commands_guild_only__', False)
             default_permissions = getattr(self.callback, '__discord_app_commands_default_permissions__', None)
             nsfw = getattr(self.callback, '__discord_app_commands_is_nsfw__', False)
@@ -816,7 +838,7 @@ class HybridGroup(Group[CogT, P, T]):
         name: Union[str, app_commands.locale_str] = MISSING,
         *args: Any,
         with_app_command: bool = True,
-        **kwargs: Any,
+        **kwargs: Unpack[_HybridCommandDecoratorKwargs],  # type: ignore # name, with_app_command
     ) -> Callable[[CommandCallback[CogT, ContextT, P2, U]], HybridCommand[CogT, P2, U]]:
         """A shortcut decorator that invokes :func:`~discord.ext.commands.hybrid_command` and adds it to
         the internal command list via :meth:`add_command`.
@@ -828,8 +850,8 @@ class HybridGroup(Group[CogT, P, T]):
         """
 
         def decorator(func: CommandCallback[CogT, ContextT, P2, U]):
-            kwargs.setdefault('parent', self)
-            result = hybrid_command(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            kwargs.setdefault('parent', self)  # type: ignore # parent is not for users to set
+            result = hybrid_command(name=name, *args, with_app_command=with_app_command, **kwargs)(func)  # type: ignore # name, with_app_command
             self.add_command(result)
             return result
 
@@ -840,7 +862,7 @@ class HybridGroup(Group[CogT, P, T]):
         name: Union[str, app_commands.locale_str] = MISSING,
         *args: Any,
         with_app_command: bool = True,
-        **kwargs: Any,
+        **kwargs: Unpack[_HybridGroupDecoratorKwargs],  # type: ignore # name, with_app_command
     ) -> Callable[[CommandCallback[CogT, ContextT, P2, U]], HybridGroup[CogT, P2, U]]:
         """A shortcut decorator that invokes :func:`~discord.ext.commands.hybrid_group` and adds it to
         the internal command list via :meth:`~.GroupMixin.add_command`.
@@ -852,8 +874,8 @@ class HybridGroup(Group[CogT, P, T]):
         """
 
         def decorator(func: CommandCallback[CogT, ContextT, P2, U]):
-            kwargs.setdefault('parent', self)
-            result = hybrid_group(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            kwargs.setdefault('parent', self)  # type: ignore # parent is not for users to set
+            result = hybrid_group(name=name, *args, with_app_command=with_app_command, **kwargs)(func)  # type: ignore # name, with_app_command
             self.add_command(result)
             return result
 
@@ -864,7 +886,7 @@ def hybrid_command(
     name: Union[str, app_commands.locale_str] = MISSING,
     *,
     with_app_command: bool = True,
-    **attrs: Any,
+    **attrs: Unpack[_HybridCommandDecoratorKwargs],  # type: ignore # name, with_app_command
 ) -> Callable[[CommandCallback[CogT, ContextT, P, T]], HybridCommand[CogT, P, T]]:
     r"""A decorator that transforms a function into a :class:`.HybridCommand`.
 
@@ -906,7 +928,8 @@ def hybrid_command(
     def decorator(func: CommandCallback[CogT, ContextT, P, T]) -> HybridCommand[CogT, P, T]:
         if isinstance(func, Command):
             raise TypeError('Callback is already a command.')
-        return HybridCommand(func, name=name, with_app_command=with_app_command, **attrs)
+        # Pyright does not allow Command[Any] to be assigned to Command[CogT] despite it being okay here
+        return HybridCommand(func, name=name, with_app_command=with_app_command, **attrs)  # type: ignore # name, with_app_command
 
     return decorator
 
@@ -915,7 +938,7 @@ def hybrid_group(
     name: Union[str, app_commands.locale_str] = MISSING,
     *,
     with_app_command: bool = True,
-    **attrs: Any,
+    **attrs: Unpack[_HybridGroupDecoratorKwargs],  # type: ignore # name, with_app_command
 ) -> Callable[[CommandCallback[CogT, ContextT, P, T]], HybridGroup[CogT, P, T]]:
     """A decorator that transforms a function into a :class:`.HybridGroup`.
 
@@ -939,6 +962,6 @@ def hybrid_group(
     def decorator(func: CommandCallback[CogT, ContextT, P, T]) -> HybridGroup[CogT, P, T]:
         if isinstance(func, Command):
             raise TypeError('Callback is already a command.')
-        return HybridGroup(func, name=name, with_app_command=with_app_command, **attrs)
+        return HybridGroup(func, name=name, with_app_command=with_app_command, **attrs)  # type: ignore # name, with_app_command
 
     return decorator
