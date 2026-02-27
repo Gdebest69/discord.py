@@ -24,18 +24,31 @@ DEALINGS IN THE SOFTWARE.
 
 from __future__ import annotations
 
-from typing import Callable, Any, ClassVar, Dict, Iterator, Set, TYPE_CHECKING, Tuple, Optional, TypedDict, Generic, TypeVar
+from typing import (
+    Callable,
+    Any,
+    ClassVar,
+    Dict,
+    Iterator,
+    Set,
+    TYPE_CHECKING,
+    Tuple,
+    Optional,
+    TypedDict,
+    Generic,
+    TypeVar,
+)
 from .flags import BaseFlags, flag_value, fill_with_flags, alias_flag_value
 
 __all__ = (
-    'Permissions',
-    'PermissionOverwrite',
+    "Permissions",
+    "PermissionOverwrite",
 )
 
 if TYPE_CHECKING:
     from typing_extensions import Self, Unpack
 
-    BoolOrNoneT = TypeVar('BoolOrNoneT', bound=Optional[bool])
+    BoolOrNoneT = TypeVar("BoolOrNoneT", bound=Optional[bool])
 
     class _BasePermissionsKwargs(Generic[BoolOrNoneT], TypedDict, total=False):
         create_instant_invite: BoolOrNoneT
@@ -95,6 +108,7 @@ if TYPE_CHECKING:
         create_polls: BoolOrNoneT
         use_external_apps: BoolOrNoneT
         pin_messages: BoolOrNoneT
+        bypass_slowmode: BoolOrNoneT
 
     class _PermissionsKwargs(_BasePermissionsKwargs[bool]): ...
 
@@ -107,7 +121,9 @@ class permission_alias(alias_flag_value):
     alias: str
 
 
-def make_permission_alias(alias: str) -> Callable[[Callable[[Any], int]], permission_alias]:
+def make_permission_alias(
+    alias: str,
+) -> Callable[[Callable[[Any], int]], permission_alias]:
     def decorator(func: Callable[[Any], int]) -> permission_alias:
         ret = permission_alias(func)
         ret.alias = alias
@@ -203,14 +219,16 @@ class Permissions(BaseFlags):
 
     def __init__(self, permissions: int = 0, **kwargs: Unpack[_PermissionsKwargs]):
         if not isinstance(permissions, int):
-            raise TypeError(f'Expected int parameter, received {permissions.__class__.__name__} instead.')
+            raise TypeError(
+                f"Expected int parameter, received {permissions.__class__.__name__} instead."
+            )
 
         self.value = permissions
         for key, kwvalue in kwargs.items():
             try:
                 flag = self.VALID_FLAGS[key]
             except KeyError:
-                raise TypeError(f'{key!r} is not a valid permission name.') from None
+                raise TypeError(f"{key!r} is not a valid permission name.") from None
             else:
                 self._set_flag(flag, kwvalue)  # type: ignore # TypedDict annoyance where kwvalue is an object instead of bool
 
@@ -219,14 +237,18 @@ class Permissions(BaseFlags):
         if isinstance(other, Permissions):
             return (self.value & other.value) == self.value
         else:
-            raise TypeError(f'cannot compare {self.__class__.__name__} with {other.__class__.__name__}')
+            raise TypeError(
+                f"cannot compare {self.__class__.__name__} with {other.__class__.__name__}"
+            )
 
     def is_superset(self, other: Permissions) -> bool:
         """Returns ``True`` if self has the same or more permissions as other."""
         if isinstance(other, Permissions):
             return (self.value | other.value) == self.value
         else:
-            raise TypeError(f'cannot compare {self.__class__.__name__} with {other.__class__.__name__}')
+            raise TypeError(
+                f"cannot compare {self.__class__.__name__} with {other.__class__.__name__}"
+            )
 
     def is_strict_subset(self, other: Permissions) -> bool:
         """Returns ``True`` if the permissions on other are a strict subset of those on self."""
@@ -253,7 +275,9 @@ class Permissions(BaseFlags):
         permissions set to ``True``.
         """
         # Some of these are 0 because we don't want to set unnecessary bits
-        return cls(0b0000_0000_0000_1111_0111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111)
+        return cls(
+            0b0000_0000_0001_1111_0111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111
+        )
 
     @classmethod
     def _timeout_mask(cls) -> int:
@@ -273,6 +297,7 @@ class Permissions(BaseFlags):
         base.create_public_threads = False
         base.manage_threads = False
         base.send_messages_in_threads = False
+        base.bypass_slowmode = False
         return base
 
     @classmethod
@@ -326,8 +351,13 @@ class Permissions(BaseFlags):
         .. versionchanged:: 2.4
             Added :attr:`send_polls`, :attr:`send_voice_messages`, attr:`use_external_sounds`,
             :attr:`use_embedded_activities`, and :attr:`use_external_apps` permissions.
+
+        .. versionchanged:: 2.7
+            Added :attr:`pin_messages` and :attr:`bypass_slowmode` permissions.
         """
-        return cls(0b0000_0000_0000_1110_0110_0100_1111_1101_1011_0011_1111_0111_1111_1111_0101_0001)
+        return cls(
+            0b0000_0000_0001_1110_0110_0100_1111_1101_1011_0011_1111_0111_1111_1111_0101_0001
+        )
 
     @classmethod
     def general(cls) -> Self:
@@ -346,7 +376,9 @@ class Permissions(BaseFlags):
         .. versionchanged:: 2.4
             Added :attr:`view_creator_monetization_analytics` permission.
         """
-        return cls(0b0000_0000_0000_0000_0000_1010_0000_0000_0111_0000_0000_1000_0000_0100_1011_0000)
+        return cls(
+            0b0000_0000_0000_0000_0000_1010_0000_0000_0111_0000_0000_1000_0000_0100_1011_0000
+        )
 
     @classmethod
     def membership(cls) -> Self:
@@ -355,7 +387,9 @@ class Permissions(BaseFlags):
 
         .. versionadded:: 1.7
         """
-        return cls(0b0000_0000_0000_0000_0000_0001_0000_0000_0000_1100_0000_0000_0000_0000_0000_0111)
+        return cls(
+            0b0000_0000_0000_0000_0000_0001_0000_0000_0000_1100_0000_0000_0000_0000_0000_0111
+        )
 
     @classmethod
     def text(cls) -> Self:
@@ -377,9 +411,11 @@ class Permissions(BaseFlags):
             Added :attr:`send_polls` and :attr:`use_external_apps` permissions.
 
         .. versionchanged:: 2.7
-            Added :attr:`pin_messages` permission.
+            Added :attr:`pin_messages` and :attr:`bypass_slowmode` permissions.
         """
-        return cls(0b0000_0000_0000_1110_0100_0000_0111_1100_1000_0000_0000_0111_1111_1000_0100_0000)
+        return cls(
+            0b0000_0000_0001_1110_0100_0000_0111_1100_1000_0000_0000_0111_1111_1000_0100_0000
+        )
 
     @classmethod
     def voice(cls) -> Self:
@@ -389,7 +425,9 @@ class Permissions(BaseFlags):
         .. versionchanged:: 2.7
             Added :attr:`set_voice_channel_status` permission.
         """
-        return cls(0b0000_0000_0000_0001_0010_0100_1000_0000_0000_0011_1111_0000_0000_0011_0000_0000)
+        return cls(
+            0b0000_0000_0000_0001_0010_0100_1000_0000_0000_0011_1111_0000_0000_0011_0000_0000
+        )
 
     @classmethod
     def stage(cls) -> Self:
@@ -414,7 +452,9 @@ class Permissions(BaseFlags):
         .. versionchanged:: 2.0
             Added :attr:`manage_channels` permission and removed :attr:`request_to_speak` permission.
         """
-        return cls(0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_0100_0000_0000_0000_0001_0000)
+        return cls(
+            0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_0100_0000_0000_0000_0001_0000
+        )
 
     @classmethod
     def elevated(cls) -> Self:
@@ -435,7 +475,9 @@ class Permissions(BaseFlags):
 
         .. versionadded:: 2.0
         """
-        return cls(0b0000_0000_0000_0000_0000_0001_0000_0100_0111_0000_0000_0000_0010_0000_0011_1110)
+        return cls(
+            0b0000_0000_0000_0000_0000_0001_0000_0100_0111_0000_0000_0000_0010_0000_0011_1110
+        )
 
     @classmethod
     def apps(cls) -> Self:
@@ -445,7 +487,9 @@ class Permissions(BaseFlags):
 
         .. versionadded:: 2.6
         """
-        return cls(0b0000_0000_0000_0100_0000_0000_1000_0000_1000_0000_0000_0000_0000_0000_0000_0000)
+        return cls(
+            0b0000_0000_0000_0100_0000_0000_1000_0000_1000_0000_0000_0000_0000_0000_0000_0000
+        )
 
     @classmethod
     def events(cls) -> Self:
@@ -454,7 +498,9 @@ class Permissions(BaseFlags):
 
         .. versionadded:: 2.4
         """
-        return cls(0b0000_0000_0000_0000_0001_0000_0000_0010_0000_0000_0000_0000_0000_0000_0000_0000)
+        return cls(
+            0b0000_0000_0000_0000_0001_0000_0000_0010_0000_0000_0000_0000_0000_0000_0000_0000
+        )
 
     @classmethod
     def advanced(cls) -> Self:
@@ -557,7 +603,7 @@ class Permissions(BaseFlags):
         """:class:`bool`: Returns ``True`` if a user can read messages from all or specific text channels."""
         return 1 << 10
 
-    @make_permission_alias('read_messages')
+    @make_permission_alias("read_messages")
     def view_channel(self) -> int:
         """:class:`bool`: An alias for :attr:`read_messages`.
 
@@ -577,7 +623,7 @@ class Permissions(BaseFlags):
 
     @flag_value
     def manage_messages(self) -> int:
-        """:class:`bool`: Returns ``True`` if a user can delete messages or bypass slowmode in a text channel.
+        """:class:`bool`: Returns ``True`` if a user can delete messages in a text channel.
 
         .. note::
 
@@ -610,7 +656,7 @@ class Permissions(BaseFlags):
         """:class:`bool`: Returns ``True`` if a user can use emojis from other guilds."""
         return 1 << 18
 
-    @make_permission_alias('external_emojis')
+    @make_permission_alias("external_emojis")
     def use_external_emojis(self) -> int:
         """:class:`bool`: An alias for :attr:`external_emojis`.
 
@@ -674,7 +720,7 @@ class Permissions(BaseFlags):
         """
         return 1 << 28
 
-    @make_permission_alias('manage_roles')
+    @make_permission_alias("manage_roles")
     def manage_permissions(self) -> int:
         """:class:`bool`: An alias for :attr:`manage_roles`.
 
@@ -695,12 +741,12 @@ class Permissions(BaseFlags):
         """
         return 1 << 30
 
-    @make_permission_alias('manage_expressions')
+    @make_permission_alias("manage_expressions")
     def manage_emojis(self) -> int:
         """:class:`bool`: An alias for :attr:`manage_expressions`."""
         return 1 << 30
 
-    @make_permission_alias('manage_expressions')
+    @make_permission_alias("manage_expressions")
     def manage_emojis_and_stickers(self) -> int:
         """:class:`bool`: An alias for :attr:`manage_expressions`.
 
@@ -764,7 +810,7 @@ class Permissions(BaseFlags):
         """
         return 1 << 37
 
-    @make_permission_alias('external_stickers')
+    @make_permission_alias("external_stickers")
     def use_external_stickers(self) -> int:
         """:class:`bool`: An alias for :attr:`external_stickers`.
 
@@ -860,7 +906,7 @@ class Permissions(BaseFlags):
         """
         return 1 << 49
 
-    @make_permission_alias('send_polls')
+    @make_permission_alias("send_polls")
     def create_polls(self) -> int:
         """:class:`bool`: An alias for :attr:`send_polls`.
 
@@ -883,6 +929,14 @@ class Permissions(BaseFlags):
         .. versionadded:: 2.7
         """
         return 1 << 51
+
+    @flag_value
+    def bypass_slowmode(self) -> int:
+        """:class:`bool`: Returns ``True`` if a user can bypass slowmode.
+
+        .. versionadded:: 2.7
+        """
+        return 1 << 52
 
 
 def _augment_from_permissions(cls):
@@ -946,7 +1000,7 @@ class PermissionOverwrite:
         Set the value of permissions by their name.
     """
 
-    __slots__ = ('_values',)
+    __slots__ = ("_values",)
 
     if TYPE_CHECKING:
         VALID_NAMES: ClassVar[Set[str]]
@@ -1010,13 +1064,14 @@ class PermissionOverwrite:
         use_external_apps: Optional[bool]
         pin_messages: Optional[bool]
         set_voice_channel_status: Optional[bool]
+        bypass_slowmode: Optional[bool]
 
     def __init__(self, **kwargs: Unpack[_PermissionOverwriteKwargs]) -> None:
         self._values: Dict[str, Optional[bool]] = {}
 
         for key, value in kwargs.items():
             if key not in self.VALID_NAMES:
-                raise ValueError(f'no permission called {key}.')
+                raise ValueError(f"no permission called {key}.")
 
             setattr(self, key, value)
 
@@ -1025,7 +1080,9 @@ class PermissionOverwrite:
 
     def _set(self, key: str, value: Optional[bool]) -> None:
         if value not in (True, None, False):
-            raise TypeError(f'Expected bool or NoneType, received {value.__class__.__name__}')
+            raise TypeError(
+                f"Expected bool or NoneType, received {value.__class__.__name__}"
+            )
 
         if value is None:
             self._values.pop(key, None)

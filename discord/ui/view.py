@@ -28,7 +28,6 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Coroutine,
     Dict,
     Generator,
     Iterator,
@@ -50,7 +49,7 @@ import sys
 import time
 import os
 
-from .item import Item, ItemCallbackType
+from .item import Item, ItemCallbackType, _ItemCallback
 from .select import Select
 from .dynamic import DynamicItem
 from ..components import (
@@ -83,6 +82,7 @@ if TYPE_CHECKING:
     import re
 
     from ..interactions import Interaction
+    from .._types import ClientT
     from ..message import Message
     from ..types.components import ComponentBase as ComponentBasePayload
     from ..types.interactions import (
@@ -207,18 +207,6 @@ class _ViewWeights:
         self.weights = [0, 0, 0, 0, 0]
 
 
-class _ViewCallback:
-    __slots__ = ('view', 'callback', 'item')
-
-    def __init__(self, callback: ItemCallbackType[Any, Any], view: BaseView, item: Item[BaseView]) -> None:
-        self.callback: ItemCallbackType[Any, Any] = callback
-        self.view: BaseView = view
-        self.item: Item[BaseView] = item
-
-    def __call__(self, interaction: Interaction) -> Coroutine[Any, Any, Any]:
-        return self.callback(self.view, interaction, self.item)
-
-
 class BaseView:
     __discord_ui_view__: ClassVar[bool] = False
     __discord_ui_modal__: ClassVar[bool] = False
@@ -232,7 +220,14 @@ class BaseView:
         self.__cancel_callback: Optional[Callable[[BaseView], None]] = None
         self.__timeout_expiry: Optional[float] = None
         self.__timeout_task: Optional[asyncio.Task[None]] = None
-        self.__stopped: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self.__stopped: Optional[asyncio.Future[bool]] = None
+        else:
+            self.__stopped: Optional[asyncio.Future[bool]] = loop.create_future()
+
         self._total_children: int = len(tuple(self.walk_children()))
 
     def _is_layout(self) -> bool:
@@ -252,13 +247,13 @@ class BaseView:
                 item._update_view(self)
                 parent = getattr(item, '__discord_ui_parent__', None)
                 if parent and parent._view is None:
-                    parent._view = self
+                    parent._update_view(self)
                 children.append(item)
                 parents[raw] = item
             else:
                 item: Item = raw.__discord_ui_model_type__(**raw.__discord_ui_model_kwargs__)
-                item.callback = _ViewCallback(raw, self, item)  # type: ignore
-                item._view = self
+                item.callback = _ItemCallback(raw, self, item)  # type: ignore
+                item._update_view(self)
                 if isinstance(item, Select):
                     item.options = [option.copy() for option in item.options]
                 setattr(self, raw.__name__, item)
@@ -452,6 +447,7 @@ class BaseView:
             pass
         else:
             self._add_count(-item._total_count)
+            item._update_view(None)
 
         return self
 
@@ -461,6 +457,9 @@ class BaseView:
         This function returns the class instance to allow for fluent-style
         chaining.
         """
+        for child in self._children:
+            child._update_view(None)
+
         self._children.clear()
         self._total_children = 0
         return self
@@ -487,7 +486,7 @@ class BaseView:
         """
         return _utils_get(self.walk_children(), id=id)
 
-    async def interaction_check(self, interaction: Interaction, /) -> bool:
+    async def interaction_check(self, interaction: Interaction[ClientT], /) -> bool:
         """|coro|
 
         A callback that is called when an interaction happens within the view
@@ -522,7 +521,7 @@ class BaseView:
         """
         pass
 
-    async def on_error(self, interaction: Interaction, error: Exception, item: Item[Any], /) -> None:
+    async def on_error(self, interaction: Interaction[ClientT], error: Exception, item: Item[Any], /) -> None:
         """|coro|
 
         A callback that is called when an item's callback or :meth:`interaction_check`
@@ -541,7 +540,7 @@ class BaseView:
         """
         _log.error('Ignoring exception in view %r for item %r', self, item, exc_info=error)
 
-    async def _scheduled_task(self, item: Item, interaction: Interaction):
+    async def _scheduled_task(self, item: Item[Any], interaction: Interaction[ClientT]):
         try:
             item._refresh_state(interaction, interaction.data)  # type: ignore
 
@@ -566,7 +565,7 @@ class BaseView:
             self.__timeout_task = asyncio.create_task(self.__timeout_task_impl())
 
     def _dispatch_timeout(self):
-        if self.__stopped.done():
+        if self.__stopped is None or self.__stopped.done():
             return
 
         if self.__cancel_callback:
@@ -576,9 +575,9 @@ class BaseView:
         self.__stopped.set_result(True)
         asyncio.create_task(self.on_timeout(), name=f'discord-ui-view-timeout-{self.id}')
 
-    def _dispatch_item(self, item: Item, interaction: Interaction) -> Optional[asyncio.Task[None]]:
-        if self.__stopped.done():
-            return
+    def _dispatch_item(self, item: Item[Any], interaction: Interaction[ClientT]) -> Optional[asyncio.Task[None]]:
+        if self.__stopped is None or self.__stopped.done():
+            return None
 
         return asyncio.create_task(self._scheduled_task(item, interaction), name=f'discord-ui-view-dispatch-{self.id}')
 
@@ -609,7 +608,7 @@ class BaseView:
 
         This operation cannot be undone.
         """
-        if not self.__stopped.done():
+        if self.__stopped is not None and not self.__stopped.done():
             self.__stopped.set_result(False)
 
         self.__timeout_expiry = None
@@ -623,6 +622,9 @@ class BaseView:
 
     def is_finished(self) -> bool:
         """:class:`bool`: Whether the view has finished interacting."""
+        if self.__stopped is None:
+            return False
+
         return self.__stopped.done()
 
     def is_dispatching(self) -> bool:
@@ -651,6 +653,9 @@ class BaseView:
             If ``True``, then the view timed out. If ``False`` then
             the view finished normally.
         """
+        if self.__stopped is None:
+            self.__stopped = asyncio.get_running_loop().create_future()
+
         return await self.__stopped
 
     def walk_children(self) -> Generator[Item[Any], None, None]:
@@ -757,6 +762,8 @@ class View(BaseView):
             pass
         else:
             self.__weights.remove_item(item)
+            item._update_view(None)
+
         return self
 
     def clear_items(self) -> Self:
@@ -892,7 +899,7 @@ class ViewStore:
             self._modals[view.custom_id] = view  # type: ignore
             return
 
-        dispatch_info = self._views.setdefault(message_id, {})
+        dispatch_info = self._views.get(message_id, {})
         is_fully_dynamic = True
         for item in view.walk_children():
             if isinstance(item, DynamicItem):
@@ -903,25 +910,28 @@ class ViewStore:
                 is_fully_dynamic = False
 
         view._cache_key = message_id
+        if dispatch_info:
+            self._views[message_id] = dispatch_info
+
         if message_id is not None and not is_fully_dynamic:
             self._synced_message_views[message_id] = view
 
-    def remove_view(self, view: View) -> None:
+    def remove_view(self, view: BaseView) -> None:
         if view.__discord_ui_modal__:
             self._modals.pop(view.custom_id, None)  # type: ignore
             return
 
         dispatch_info = self._views.get(view._cache_key)
         if dispatch_info:
-            for item in view._children:
+            for item in view.walk_children():
                 if isinstance(item, DynamicItem):
                     pattern = item.__discord_ui_compiled_template__
                     self._dynamic_items.pop(pattern, None)
                 elif item.is_dispatchable():
                     dispatch_info.pop((item.type.value, item.custom_id), None)  # type: ignore
 
-            if len(dispatch_info) == 0:
-                self._views.pop(view._cache_key, None)
+        if dispatch_info is not None and len(dispatch_info) == 0:
+            self._views.pop(view._cache_key, None)
 
         self._synced_message_views.pop(view._cache_key, None)  # type: ignore
 
@@ -929,7 +939,7 @@ class ViewStore:
         self,
         component_type: int,
         factory: Type[DynamicItem[Item[Any]]],
-        interaction: Interaction,
+        interaction: Interaction[ClientT],
         custom_id: str,
         match: re.Match[str],
     ) -> None:
@@ -980,7 +990,7 @@ class ViewStore:
         except Exception:
             _log.exception('Ignoring exception in dynamic item callback for %r', item)
 
-    def dispatch_dynamic_items(self, component_type: int, custom_id: str, interaction: Interaction) -> None:
+    def dispatch_dynamic_items(self, component_type: int, custom_id: str, interaction: Interaction[ClientT]) -> None:
         for pattern, item in self._dynamic_items.items():
             match = pattern.fullmatch(custom_id)
             if match is not None:
@@ -991,7 +1001,7 @@ class ViewStore:
                     )
                 )
 
-    def dispatch_view(self, component_type: int, custom_id: str, interaction: Interaction) -> None:
+    def dispatch_view(self, component_type: int, custom_id: str, interaction: Interaction[ClientT]) -> None:
         self.dispatch_dynamic_items(component_type, custom_id, interaction)
         interaction_id: Optional[int] = None
         message_id: Optional[int] = None
@@ -1034,15 +1044,18 @@ class ViewStore:
         if item is None:
             return
 
-        # Note, at this point the View is *not* None
-        task = item.view._dispatch_item(item, interaction)  # type: ignore
+        if item.view is None:
+            _log.warning('View interaction referencing unknown view for item %s. Discarding', item)
+            return
+
+        task = item.view._dispatch_item(item, interaction)
         if task is not None:
             self.add_task(task)
 
     def dispatch_modal(
         self,
         custom_id: str,
-        interaction: Interaction,
+        interaction: Interaction[ClientT],
         components: List[ModalSubmitComponentInteractionDataPayload],
         resolved: ResolvedDataPayload,
     ) -> None:
